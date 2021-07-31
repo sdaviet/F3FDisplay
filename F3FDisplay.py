@@ -49,7 +49,7 @@ class Epaper:
         except KeyboardInterrupt:
             logging.info("ctrl + c:")
 
-    def displayPilot(self, currentRound, besttime, pilotlist, NextRound, NextPilotList):
+    def displayPilot(self, besttimelist, pilotlist):
         try:
             self.epd.Clear()
             column = 0
@@ -57,17 +57,25 @@ class Epaper:
             xoffset = 5
             image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
             draw = ImageDraw.Draw(image)
-            string = 'ORDRE Manche : ' + str(currentRound)
+
+            string = 'BEST TIME :'
             stringsize = self.font35.getsize(string)
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
-            string = 'Meilleur temps : ' + str(besttime)
+            for besttime in besttimelist:
+                string = str(besttime['group_number']) + ' - ' + besttime['best_run']
+                stringsize = self.font24.getsize(string)
+                draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+                yoffset += stringsize[1] + 1
+
+            #yoffset += int(stringsize[1])
+            string = 'REMAINING PILOTS :'
             stringsize = self.font35.getsize(string)
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset_title = yoffset + stringsize[1] + 1
+            yoffset += stringsize[1]+1
+            yoffset_title = yoffset
             for pilot in pilotlist:
-                yoffset += stringsize[1] + 1
-                string = str(pilot['bib']) + ' : ' + pilot['name']
+                string = str(pilot['bib_number']) + ' : ' + pilot['pilot_name']
                 stringsize = self.font24.getsize(string)
 
                 # check if pilot name length is ok in 2 column display
@@ -76,7 +84,7 @@ class Epaper:
                     stringsize = self.font24.getsize(string)
 
                 # Check end of display height and width
-                if yoffset + stringsize[1] > self.epd.height:
+                if yoffset > self.epd.height:
                     if column < 1:
                         xoffset += self.epd.width / 2
                         yoffset = yoffset_title
@@ -85,32 +93,7 @@ class Epaper:
                         xoffset = self.epd.width + 1
                         yoffset = yoffset_title
                 draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-
-            yoffset += stringsize[1] + 1
-            string = 'Manche N° : ' + str(NextRound)
-            stringsize = self.font24.getsize(string)
-            draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-            yoffset += stringsize[1] + 1
-
-            for pilot in NextPilotList:
                 yoffset += stringsize[1] + 1
-                string = str(pilot['bib']) + ' : ' + pilot['name']
-                stringsize = self.font24.getsize(string)
-
-                # check if pilot name length is ok in 2 column display
-                if stringsize[0] > (self.epd.width / 2 - 5):
-                    string = string[:len(string) - int(stringsize[0]/(self.epd.width / 2 - 5)) - 2] + '.'
-                    stringsize = self.font24.getsize(string)
-
-                # Check end of display height and width
-                if yoffset + stringsize[1] > self.epd.height:
-                    if column < 1:
-                        xoffset += self.epd.width / 2
-                        yoffset = yoffset_title
-                        column += 1
-                    else:
-                        xoffset = self.epd.width + 1
-                draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
 
             self.epd.display(self.epd.getbuffer(image))
             image.close()

@@ -66,9 +66,12 @@ class RoundEvent(QTimer):
         self.start(2000)
 
     def roundEvent(self):
-        if len(self.data['currentround']['pilotlist']) > 0:
+        if len(self.data['remaining_pilots']) > 0:
             self.udp.sendOrderData(json.dumps(self.data))
-            del self.data['currentround']['pilotlist'][0]
+            del self.data['remaining_pilots'][0]
+        else:
+            self.stop()
+            exit()
 
 if __name__ == '__main__':
     print ("UDP Beep Debug")

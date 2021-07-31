@@ -63,7 +63,10 @@ class Epaper:
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
             for besttime in besttimelist:
-                string = str(besttime['group_number']) + ' - ' + besttime['best_run']
+                if 'best_run' in besttime:
+                    string = 'Grp : ' + str(besttime['group_number']) + ' - ' + besttime['best_run']
+                else:
+                    string = 'Grp : ' + str(besttime['group_number']) + ' - ' + "No time availables"
                 stringsize = self.font24.getsize(string)
                 draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
                 yoffset += stringsize[1] + 1

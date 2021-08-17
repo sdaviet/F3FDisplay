@@ -53,9 +53,13 @@ class Epaper:
         try:
             image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
             draw = ImageDraw.Draw(image)
-            string = 'WAITING DATA'
-            stringsize = self.font35.getsize(string)
-            draw.text((int(self.epd.width / 2 - stringsize[0] / 2), self.epd.height/2), string, font=self.font35, fill=0)
+            string0 = 'F3FDISPLAY PILOTS'
+            stringsize0 = self.font35.getsize(string0)
+
+            string1 = 'WAITING DATA'
+            stringsize1 = self.font35.getsize(string1)
+            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
+            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
             self.epd.display(self.epd.getbuffer(image))
             image.close()
         except IOError as e:

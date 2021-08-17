@@ -104,7 +104,7 @@ class Epaper:
                     stringsize = self.font24.getsize(string)
 
                 # Check end of display height and width
-                if yoffset > self.epd.height-1:
+                if yoffset+stringsize[1] > self.epd.height:
                     if column < 1:
                         xoffset += self.epd.width / 2
                         yoffset = yoffset_title

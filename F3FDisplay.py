@@ -42,12 +42,25 @@ class Epaper:
             self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
             self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
             self.font35 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 35)
-
+            self.displayWaitingMsg()
         except IOError as e:
             logging.info(e)
 
         except KeyboardInterrupt:
             logging.info("ctrl + c:")
+
+    def displayWaitingMsg(self):
+        try:
+            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+            draw = ImageDraw.Draw(image)
+            string = 'WAITING DATA'
+            stringsize = self.font35.getsize(string)
+            draw.text((int(self.epd.width / 2 - stringsize[0] / 2), self.epd.height/2), string, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(image))
+            image.close()
+        except IOError as e:
+            logging.info(e)
+
 
     def displayPilot(self, besttimelist, pilotlist):
         try:

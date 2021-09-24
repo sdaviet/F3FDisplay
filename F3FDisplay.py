@@ -68,7 +68,7 @@ class Epaper:
 
     def displayPilot(self, besttimelist, pilotlist):
         try:
-            self.epd.Clear()
+            #self.epd.Clear()
             column = 0
             yoffset = 0
             xoffset = 5

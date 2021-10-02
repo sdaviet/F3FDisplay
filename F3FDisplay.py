@@ -94,17 +94,27 @@ class Epaper:
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1]+1
             yoffset_title = yoffset
+            yoffsetMax = 0
+            #search yoffset Max
+            for pilot in pilotlist:
+                string = str(pilot['bib_number']) + ' : ' + pilot['pilot_name']
+                stringsize = self.font24.getsize(string)
+                if stringsize[1]>yoffsetMax:
+                    yoffsetMax=stringsize[1]
             for pilot in pilotlist:
                 string = str(pilot['bib_number']) + ' : ' + pilot['pilot_name']
                 stringsize = self.font24.getsize(string)
 
                 # check if pilot name length is ok in 2 column display
-                if stringsize[0] > (self.epd.width / 2 - 5):
-                    string = string[:len(string) - int(stringsize[0]/(self.epd.width / 2 - 5)) - 2] + '.'
+                if stringsize[0] > (self.epd.width / 2 - 4):
+                    #string = string[:len(string) - int(stringsize[0]/(self.epd.width / 2 - 4))] + '.'
+                    string = string[:int(len(string)*(self.epd.width / 2 - 4)/stringsize[0])-1] + '.'
+                    #string = string[:16] + '.'
+                    print(len(string), int(stringsize[0]/(self.epd.width / 2 - 4) + 2), len(string) - int(stringsize[0]/(self.epd.width / 2) + 2))
                     stringsize = self.font24.getsize(string)
 
                 # Check end of display height and width
-                if yoffset+stringsize[1] > self.epd.height:
+                if yoffset+yoffsetMax > self.epd.height:
                     if column < 1:
                         xoffset += self.epd.width / 2
                         yoffset = yoffset_title
@@ -113,7 +123,7 @@ class Epaper:
                         xoffset = self.epd.width + 1
                         yoffset = yoffset_title
                 draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+                yoffset += yoffsetMax + 1
 
             self.epd.display(self.epd.getbuffer(image))
             image.close()

@@ -1,8 +1,5 @@
-#-udp fonctionnal test
-#vim: set et sw=4 sts=4 fileencoding=utf-8:
-
 #
-# This file is part of the F3FChrono distribution (https://github.com/jomarin38/F3FChrono).
+# This file is part of the F3FDisplay distribution (https://github.com/sdaviet/F3FDisplay).
 # Copyright (c) 2021 Sylvain DAVIET, Joel MARIN.
 #
 # This program is free software: you can redistribute it and/or modify

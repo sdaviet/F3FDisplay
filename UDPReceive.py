@@ -30,7 +30,8 @@ RACEORDERMSG = "Order"
 
 
 class udpreceive(QThread):
-    order_sig = pyqtSignal(list, list)
+    #signal round number, group best time, ramaining pilots
+    order_sig = pyqtSignal(str, list, list)
 
     def __init__(self, udpport):
         super().__init__()
@@ -66,7 +67,8 @@ class udpreceive(QThread):
                     print(orderstring)
                     orderjson = json.loads(orderstring)
 
-                    self.order_sig.emit(orderjson['best_runs'],
+                    self.order_sig.emit(orderjson['round'],
+                                        orderjson['best_runs'],
                                         orderjson['remaining_pilots'])
 
             except socket.error as msg:

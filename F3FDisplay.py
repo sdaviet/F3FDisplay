@@ -82,7 +82,7 @@ class Epaper:
             logging.info(e)
 
 
-    def displayPilot(self, round, besttimelist, pilotlist):
+    def displayPilot(self, round, weather, besttimelist, pilotlist):
         try:
             #self.epd.Clear()
             column = 0
@@ -91,7 +91,7 @@ class Epaper:
             image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
             draw = ImageDraw.Draw(image)
 
-            string = 'ROUND ' + round + ', BEST TIME'
+            string = 'ROUND ' + round + ' - ' + str(weather['wind']) + 'm/s, ' + str(weather['orient']) + '°'
             stringsize = self.font35.getsize(string)
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
@@ -155,6 +155,22 @@ class Epaper:
             logging.info(e)
 
     def close(self):
+        try:
+            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+            draw = ImageDraw.Draw(image)
+            string0 = 'F3F DISPLAY'
+            stringsize0 = self.font35.getsize(string0)
+
+            string1 = 'BYE BYE'
+            stringsize1 = self.font35.getsize(string1)
+            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]), string0,
+                      font=self.font35, fill=0)
+            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]), string1,
+                      font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(image))
+            image.close()
+        except IOError as e:
+            logging.info(e)
         if is_running_on_pi():
             epd4in2.epdconfig.module_exit()
 
@@ -171,6 +187,6 @@ if __name__ == '__main__':
     udp.order_sig.connect(display.displayPilot)
 
     sys.exit(app.exec_())
-    display.sleep()
     display.close()
+    display.sleep()
 

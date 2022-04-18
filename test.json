@@ -1,13 +1,15 @@
 {
-  "best_runs": [{"group_number": 1,"best_run": "DELARBRE\\tThomas\\t:\\t10.643"}],
+  "weather": {"wind": 10, "orient": 0},
+  "round": "1",
+  "best_runs": [{"group_number": 1,"best_run": "DELARBRE Thomas:10.643"}],
   "remaining_pilots": [
-    {"bib_number": 8, "pilot_name": "FAURE\\tMartial"},
-    {"bib_number": 14, "pilot_name": "Rondel\\tPierre"},
-    {"bib_number": 10, "pilot_name": "Daviet\\tSylvain"},
-    {"bib_number": 1, "pilot_name": "Mervelet\\tMatthieu"},
-    {"bib_number": 2, "pilot_name": "Hours\\tFrederic"},
-    {"bib_number": 3, "pilot_name": "Philippe\\tLanes"},
-    {"bib_number": 4, "pilot_name": "KREBS\\tMicha\\u00ebl"},
-    {"bib_number": 5, "pilot_name": "VINCENT\\tArnaud"},
-    {"bib_number": 6, "pilot_name": "MONET\\tOlivier"}]
+    {"bib_number": 8, "pilot_name": "FAURE Martial"},
+    {"bib_number": 14, "pilot_name": "Rondel Pierre"},
+    {"bib_number": 10, "pilot_name": "Daviet Sylvain"},
+    {"bib_number": 1, "pilot_name": "Mervelet Matthieu"},
+    {"bib_number": 2, "pilot_name": "Hours Frederic"},
+    {"bib_number": 3, "pilot_name": "Philippe Lanes"},
+    {"bib_number": 4, "pilot_name": "KREBS Michael"},
+    {"bib_number": 5, "pilot_name": "VINCENT Arnaud"},
+    {"bib_number": 6, "pilot_name": "MONET Olivier"}]
 }

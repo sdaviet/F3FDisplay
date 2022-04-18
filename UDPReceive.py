@@ -31,7 +31,7 @@ RACEORDERMSG = "Order"
 
 class udpreceive(QThread):
     #signal round number, group best time, ramaining pilots
-    order_sig = pyqtSignal(str, list, list)
+    order_sig = pyqtSignal(str, dict, list, list)
 
     def __init__(self, udpport):
         super().__init__()
@@ -68,6 +68,7 @@ class udpreceive(QThread):
                     orderjson = json.loads(orderstring)
 
                     self.order_sig.emit(orderjson['round'],
+                                        orderjson['weather'],
                                         orderjson['best_runs'],
                                         orderjson['remaining_pilots'])
 

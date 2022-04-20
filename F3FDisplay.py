@@ -92,7 +92,7 @@ class Epaper:
             draw = ImageDraw.Draw(image)
             string = 'ROUND ' + round
             if len(weather)>0:
-                string += ' - ' + str(weather['wind']) + 'm/s, ' + str(weather['orient']) + '°'
+                string += ' - ' + '{:.0f}'.format(weather['wind']) + 'm/s, ' + '{:.0f}'.format(weather['orient']) + '°'
             stringsize = self.font35.getsize(string)
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1

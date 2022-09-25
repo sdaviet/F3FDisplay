@@ -35,6 +35,8 @@ else:
 import time
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 from UDPReceive import udpreceive
+from Utils import  getnetwork_info
+
 
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 
@@ -67,13 +69,22 @@ class Epaper:
 
     def displayWaitingMsg(self):
         try:
+            network = getnetwork_info()
             image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
             draw = ImageDraw.Draw(image)
+
+            stringIp = "IP:" + network[0]
+            stringGw = "GW:" + network[1]
+            stringsizeIp = self.font35.getsize(stringIp)
+            stringsizeGw = self.font35.getsize(stringGw)
             string0 = 'F3FDISPLAY PILOTS'
             stringsize0 = self.font35.getsize(string0)
 
             string1 = 'WAITING DATA'
             stringsize1 = self.font35.getsize(string1)
+
+            draw.text((int(self.epd.width / 2 - stringsizeIp[0] / 2), 20), stringIp, font=self.font35, fill=0)
+            draw.text((int(self.epd.width / 2 - stringsizeGw[0] / 2), 60), stringGw, font=self.font35, fill=0)
             draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
             draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
             self.epd.display(self.epd.getbuffer(image))
@@ -127,7 +138,7 @@ class Epaper:
                     #string = string[:len(string) - int(stringsize[0]/(self.epd.width / 2 - 4))] + '.'
                     string = string[:int(len(string)*(self.epd.width / 2 - 4)/stringsize[0])-1] + '.'
                     #string = string[:16] + '.'
-                    print(len(string), int(stringsize[0]/(self.epd.width / 2 - 4) + 2), len(string) - int(stringsize[0]/(self.epd.width / 2) + 2))
+                    #print(len(string), int(stringsize[0]/(self.epd.width / 2 - 4) + 2), len(string) - int(stringsize[0]/(self.epd.width / 2) + 2))
                     stringsize = self.font24.getsize(string)
 
                 # Check end of display height and width

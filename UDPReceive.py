@@ -64,18 +64,20 @@ class udpreceive(QThread):
                     break
                 if m[0] == RACEORDERMSG:
                     orderstring = data.decode('utf-8')[len(m[0])+1:]
-                    print(orderstring)
+                    if self.__debug:
+                        print('datasize:'+str(len(orderstring)))
+                        print(orderstring)
                     orderjson = json.loads(orderstring)
                     if 'weather' in orderjson:
                         self.order_sig.emit(orderjson['round'],
-                                            orderjson['weather'],
-                                            orderjson['best_runs'],
-                                            orderjson['remaining_pilots'])
+                                            orderjson['w'],
+                                            orderjson['best'],
+                                            orderjson['remain'])
                     else:
                         self.order_sig.emit(orderjson['round'],
                                             {},
-                                            orderjson['best_runs'],
-                                            orderjson['remaining_pilots'])
+                                            orderjson['best'],
+                                            orderjson['remain'])
             except socket.error as msg:
                 print('udp receive error {}'.format(msg))
                 logging.warning('udp receive error {}'.format(msg))

@@ -103,15 +103,15 @@ class Epaper:
             draw = ImageDraw.Draw(image)
             string = 'ROUND ' + round
             if len(weather)>0:
-                string += ' - ' + '{:.0f}'.format(weather['wind']) + 'm/s, ' + '{:.0f}'.format(weather['orient']) + '°'
+                string += ' - ' + '{:.0f}'.format(weather['s']) + 'm/s, ' + '{:.0f}'.format(weather['dir']) + '°'
             stringsize = self.font35.getsize(string)
             draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
             for besttime in besttimelist:
-                if 'best_run' in besttime:
-                    string = 'Grp : ' + str(besttime['group_number']) + ' - ' + besttime['best_run']
+                if 'run' in besttime:
+                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + besttime['run']
                 else:
-                    string = 'Grp : ' + str(besttime['group_number']) + ' - ' + "No time availables"
+                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
                 stringsize = self.font24.getsize(string)
                 draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
                 yoffset += stringsize[1] + 1
@@ -125,12 +125,12 @@ class Epaper:
             yoffsetMax = 0
             #search yoffset Max
             for pilot in pilotlist:
-                string = str(pilot['bib_number']) + ' : ' + pilot['pilot_name']
+                string = str(pilot['bib']) + ' : ' + pilot['pil']
                 stringsize = self.font24.getsize(string)
                 if stringsize[1]>yoffsetMax:
                     yoffsetMax=stringsize[1]
             for pilot in pilotlist:
-                string = str(pilot['bib_number']) + ' : ' + pilot['pilot_name']
+                string = str(pilot['bib']) + ' : ' + pilot['pil']
                 stringsize = self.font24.getsize(string)
 
                 # check if pilot name length is ok in 2 column display

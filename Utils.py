@@ -43,10 +43,15 @@ def is_running_on_pi():
 def getnetwork_info():
     import socket
     import os
-    gw = os.popen("ip -4 route show default").read().split()
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect((gw[2], 0))
-    ipaddr = s.getsockname()[0]
-    gateway = gw[2]
-    print("IP:", ipaddr, " GW:", gateway)
+    ipaddr = 'None'
+    gateway = 'None'
+    try:
+        gw = os.popen("ip -4 route show default").read().split()
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((gw[2], 0))
+        ipaddr = s.getsockname()[0]
+        gateway = gw[2]
+        print("IP:", ipaddr, " GW:", gateway)
+    except:
+        pass
     return ipaddr, gateway

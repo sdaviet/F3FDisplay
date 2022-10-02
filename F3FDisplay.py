@@ -35,6 +35,7 @@ else:
 import time
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 from UDPReceive import udpreceive
+from tcpClient import tcpClient
 from Utils import  getnetwork_info
 
 
@@ -42,10 +43,11 @@ picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 
 
 class Epaper:
-    def __init__(self):
+    def __init__(self, ip, gateway):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
-
+        self.ip = ip
+        self.gateway = gateway
         try:
             logging.info("F3FDisplay")
 
@@ -69,18 +71,18 @@ class Epaper:
 
     def displayWaitingMsg(self):
         try:
-            network = getnetwork_info()
+
             image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
             draw = ImageDraw.Draw(image)
-
-            stringIp = "IP:" + network[0]
-            stringGw = "GW:" + network[1]
+            self.ip, self.gateway = getnetwork_info()
+            stringIp = "IP:" + self.ip
+            stringGw = "GW:" + self.gateway
             stringsizeIp = self.font35.getsize(stringIp)
             stringsizeGw = self.font35.getsize(stringGw)
             string0 = 'F3FDISPLAY PILOTS'
             stringsize0 = self.font35.getsize(string0)
 
-            string1 = 'WAITING DATA'
+            string1 = 'NOT CONNECTED'
             stringsize1 = self.font35.getsize(string1)
 
             draw.text((int(self.epd.width / 2 - stringsizeIp[0] / 2), 20), stringIp, font=self.font35, fill=0)
@@ -92,6 +94,23 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
+    def contestNotRunning(self):
+        try:
+            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+            draw = ImageDraw.Draw(image)
+
+            string0 = 'F3FDISPLAY PILOTS'
+            stringsize0 = self.font35.getsize(string0)
+
+            string1 = 'CONTEST NOT STARTED'
+            stringsize1 = self.font35.getsize(string1)
+
+            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
+            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(image))
+            image.close()
+        except IOError as e:
+            logging.info(e)
 
     def displayPilot(self, round, weather, besttimelist, pilotlist):
         try:
@@ -193,10 +212,14 @@ if __name__ == '__main__':
         app = QtWidgets.QApplication(sys.argv)
     else:
         app = QCoreApplication(sys.argv)
-
-    display = Epaper()
-    udp = udpreceive(4445)
-    udp.order_sig.connect(display.displayPilot)
+    ip, gw = getnetwork_info()
+    display = Epaper(ip, gw)
+    #udp = udpreceive(4445)
+    tcp = tcpClient(ip, gw)
+    #udp.order_sig.connect(display.displayPilot)
+    tcp.order_sig.connect(display.displayPilot)
+    tcp.contestNotRunning_sig.connect(display.contestNotRunning)
+    tcp.notConnected_sig.connect(display.displayWaitingMsg)
 
     sys.exit(app.exec_())
     display.close()

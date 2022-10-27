@@ -36,18 +36,17 @@ import time
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 from UDPReceive import udpreceive
 from tcpClient import tcpClient
-from Utils import  getnetwork_info
+from Utils import getnetwork_info
 
 
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 
 
 class Epaper:
-    def __init__(self, ip, gateway):
+    def __init__(self):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
-        self.ip = ip
-        self.gateway = gateway
+        self.ip, self.gateway = getnetwork_info()
         try:
             logging.info("F3FDisplay")
 
@@ -212,10 +211,9 @@ if __name__ == '__main__':
         app = QtWidgets.QApplication(sys.argv)
     else:
         app = QCoreApplication(sys.argv)
-    ip, gw = getnetwork_info()
-    display = Epaper(ip, gw)
+    display = Epaper()
     #udp = udpreceive(4445)
-    tcp = tcpClient(ip, gw)
+    tcp = tcpClient()
     #udp.order_sig.connect(display.displayPilot)
     tcp.order_sig.connect(display.displayPilot)
     tcp.contestNotRunning_sig.connect(display.contestNotRunning)

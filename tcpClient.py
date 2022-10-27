@@ -21,6 +21,7 @@
 import socket
 import json
 from PyQt5.QtCore import QThread, pyqtSignal
+from Utils import getnetwork_info
 
 tcpPort = 10000
 F3FChronoServerIp = "192.168.1.251"
@@ -38,15 +39,14 @@ class tcpClient(QThread):
     contestNotRunning_sig = pyqtSignal()
     notConnected_sig = pyqtSignal()
 
-    def __init__(self, ip, gw):
+    def __init__(self):
         super().__init__()
         self.__debug = True
-        self.ip = ip
-        self.gateway = gw
+        self.ip = None
+        self.gateway = None
         self.port = tcpPort
         self.status = tcpClient_Status.Init
-        self.Client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+        self.client = None
         self.start()
 
     def run(self):
@@ -54,12 +54,16 @@ class tcpClient(QThread):
             if self.status == tcpClient_Status.Init:
                 try:
                     gateway = 'localhost'
+                    self.ip, self.gateway = getnetwork_info()
                     if self.gateway == F3FChronoServerIp:
                         gateway = self.gateway
 
+                    self.Client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.Client.connect((gateway, self.port))
                 except socket.error as e:
                     print(str(e))
+                    del (self.client)
+                    self.client = None
                     self.sleep(5)
                 else:
                     if self.__debug:
@@ -94,6 +98,8 @@ class tcpClient(QThread):
                             self.Client.close()
                             self.Client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                             self.status = tcpClient_Status.Init
+                            del self.Client
+                            self.Client = None
                             self.notConnected_sig.emit()
                     else:
                         self.datareceived(data)

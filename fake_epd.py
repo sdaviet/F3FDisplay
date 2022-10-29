@@ -26,7 +26,10 @@ EPD_WIDTH = 400
 EPD_HEIGHT = 300
 
 
-class EPD:
+class EPD(QtCore.QObject):
+    signal_nextpage = QtCore.pyqtSignal()
+    signal_shutdown = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
@@ -40,9 +43,36 @@ class EPD:
         #self.lbl.setFixedSize(2*EPD_WIDTH, 2*EPD_HEIGHT)
         #self.lbl.resize(2*EPD_WIDTH, 2*EPD_HEIGHT)
         #self.MainWindow.show()
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.centralwidget = QtWidgets.QWidget(self.MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
+        self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.MainWindow.setCentralWidget(self.centralwidget)
+        self.btnPage = QtWidgets.QPushButton(self.centralwidget)
+        self.btnPage.setObjectName("btn_page")
+        self.btnPage.setText("Btn Page")
+        self.gridLayout.addWidget(self.btnPage)
+        self.btnShutDown = QtWidgets.QPushButton(self.centralwidget)
+        self.btnShutDown.setObjectName("btn_shutdown")
+        self.btnShutDown.setText("btn Shutdown")
+        self.gridLayout.addWidget(self.btnShutDown)
 
-        self.lbl = QtWidgets.QLabel()
+        self.lbl = QtWidgets.QLabel(self.centralwidget)
+        self.gridLayout.addWidget(self.lbl)
 
+        self.btnShutDown.clicked.connect(self.btn_shutdown_clicked)
+        self.btnPage.clicked.connect(self.btn_page_clicked)
+        self.MainWindow.show()
+
+    def btn_shutdown_clicked(self):
+        self.signal_shutdown.emit()
+
+    def btn_page_clicked(self):
+        self.signal_nextpage.emit()
 
     def reset(self):
         logging.info("reset")

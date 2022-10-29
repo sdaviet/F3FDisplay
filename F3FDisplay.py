@@ -30,6 +30,7 @@ from Utils import is_running_on_pi
 
 if is_running_on_pi():
     from lib.waveshare_epd import epd4in2
+    from GPIOPort import f3fDisplay_gpio
 else:
     from fake_epd import EPD
 import time
@@ -49,11 +50,16 @@ class Epaper:
         self.ip, self.gateway = getnetwork_info()
         try:
             logging.info("F3FDisplay")
-
-            if is_running_on_pi():
+            rpi = is_running_on_pi()
+            if rpi:
                 self.epd = epd4in2.EPD()
+                self.gpio = f3fDisplay_gpio(rpi)
+                self.gpio.signal_shutdown.connect(self.slot_btn_shutdown)
+                self.gpio.signal_nextpage.connect(self.slot_btn_page)
             else:
                 self.epd = EPD()
+                self.epd.signal_shutdown.connect(self.slot_btn_shutdown)
+                self.epd.signal_nextpage.connect(self.slot_btn_page)
 
             logging.info("init and Clear")
             self.epd.init()
@@ -204,6 +210,12 @@ class Epaper:
         if is_running_on_pi():
             epd4in2.epdconfig.module_exit()
 
+    def slot_btn_page(self):
+        print("slot btn_page")
+
+    def slot_btn_shutdown(self):
+        print("slot shuntdown")
+        self.close()
 
 if __name__ == '__main__':
 

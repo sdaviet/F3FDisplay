@@ -32,7 +32,7 @@ if is_running_on_pi():
     from lib.waveshare_epd import epd4in2
     from GPIOPort import f3fDisplay_gpio
 else:
-    from fake_epd import EPD
+    from fake_epd import fake_EPD
 import time
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 from UDPReceive import udpreceive
@@ -42,94 +42,158 @@ from Utils import getnetwork_info
 
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 
+class status:
+    notconnected = 0
+    contest_notstarted = 1
+    contest_inprogress = 2
+class mode:
+    contest_None = 0
+    contest_pilotlist = 1
+    contest_weather = 2
+    contest_roundtime = 3
+    contest_ranking = 4
 
-class Epaper:
+class f3fdisplay_ctrl:
     def __init__(self):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
-        self.ip, self.gateway = getnetwork_info()
+        self.mode = mode.contest_None
+        self.status = status.notconnected
+        self.pagenumber = 0
         try:
-            logging.info("F3FDisplay")
-            rpi = is_running_on_pi()
-            if rpi:
-                self.epd = epd4in2.EPD()
-                self.gpio = f3fDisplay_gpio(rpi)
-                self.gpio.signal_shutdown.connect(self.slot_btn_shutdown)
-                self.gpio.signal_nextpage.connect(self.slot_btn_page)
-            else:
-                self.epd = EPD()
-                self.epd.signal_shutdown.connect(self.slot_btn_shutdown)
-                self.epd.signal_nextpage.connect(self.slot_btn_page)
+            logging.info("F3FDisplay init")
 
-            logging.info("init and Clear")
-            self.epd.init()
-            self.epd.Clear()
-            self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
-            self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
-            self.font35 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 35)
+            self.epaper = Epaper(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
+
+            self.tcp = tcpClient()
+            self.tcp.order_sig.connect(self.setorderdataanddisplaypilot)
+            self.tcp.contestNotRunning_sig.connect(self.contestNotRunning)
+            self.tcp.notConnected_sig.connect(self.displayWaitingMsg)
             self.displayWaitingMsg()
+
         except IOError as e:
             logging.info(e)
 
         except KeyboardInterrupt:
             logging.info("ctrl + c:")
+    def setorderdataanddisplaypilot(self, round, weather, besttimelist, pilotlist):
+        if self.status != status.contest_inprogress:
+            self.mode = mode.contest_pilotlist
+            self.status = status.contest_inprogress
 
+        self.round = round
+        self.weather = weather
+        self.bestimelist = besttimelist
+        self.pilotlist = pilotlist
+        self.epaper.displayPilot(round, weather, besttimelist, pilotlist, self.pagenumber)
+
+    def contestNotRunning(self):
+        self.epaper.contestNotRunning()
+        self.status = status.contest_notstarted
+        self.mode = mode.contest_None
     def displayWaitingMsg(self):
-        try:
+        ip, gw = getnetwork_info()
+        self.epaper.displayWaitingMsg(ip, gw)
+        self.status = status.notconnected
+        self.mode = mode.contest_None
+    def slot_btn_page(self):
+        print("slot btn_page")
+        if self.status == status.contest_inprogress:
+            self.incMode()
+            if self.mode == mode.contest_pilotlist:
+                self.epaper.displayPilot(self.round, self.weather, self.bestimelist, self.pilotlist)
+            elif self.mode == mode.contest_weather:
+                self.epaper.displayWeather()
+            elif self.mode == mode.contest_ranking:
+                self.epaper.displayRanking()
+            elif self.mode == mode.contest_roundtime:
+                self.epaper.displayRoundTime()
+    def slot_down_page(self):
+        print("slot_down_page")
+    def slot_btn_shutdown(self):
+        print("slot shuntdown")
+        self.epaper.close()
 
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
-            self.ip, self.gateway = getnetwork_info()
-            stringIp = "IP:" + self.ip
-            stringGw = "GW:" + self.gateway
+    def incMode(self):
+        self.mode = self.mode+1
+        if self.mode > mode.contest_ranking:
+            self.mode = mode.contest_pilotlist
+
+class Epaper:
+    def __init__(self, slot_shutdown, slot_page, slot_page_down):
+        super().__init__()
+        try:
+            rpi = is_running_on_pi()
+            if rpi:
+                self.epd = epd4in2.EPD()
+                self.gpio = f3fDisplay_gpio(rpi)
+                self.gpio.signal_shutdown.connect(slot_shutdown)
+                self.gpio.signal_nextpage.connect(slot_page)
+                self.gpio.signal_downpage.connect(slot_page_down)
+            else:
+                self.epd = fake_EPD(4.2)
+                self.epd.signal_shutdown.connect(slot_shutdown)
+                self.epd.signal_nextpage.connect(slot_page)
+                self.epd.signal_downpage.connect(slot_page_down)
+            self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
+            self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
+            self.font35 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 35)
+            self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+            self.draw = ImageDraw.Draw(self.image)
+
+        finally:
+            logging.info("init and Clear")
+            self.epd.init()
+            self.epd.Clear()
+
+    def displayWaitingMsg(self, ip, gateway):
+        try:
+            self.clearImage()
+            stringIp = "IP:" + ip
+            stringGw = "GW:" + gateway
             stringsizeIp = self.font35.getsize(stringIp)
             stringsizeGw = self.font35.getsize(stringGw)
-            string0 = 'F3FDISPLAY PILOTS'
+            string0 = 'F3FDISPLAY'
             stringsize0 = self.font35.getsize(string0)
 
             string1 = 'NOT CONNECTED'
             stringsize1 = self.font35.getsize(string1)
 
-            draw.text((int(self.epd.width / 2 - stringsizeIp[0] / 2), 20), stringIp, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsizeGw[0] / 2), 60), stringGw, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
+            self.draw.text((int(self.epd.width / 2 - stringsizeIp[0] / 2), 20), stringIp, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsizeGw[0] / 2), 60), stringGw, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
     def contestNotRunning(self):
         try:
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
-
-            string0 = 'F3FDISPLAY PILOTS'
+            string0 = 'F3FDISPLAY'
             stringsize0 = self.font35.getsize(string0)
 
             string1 = 'CONTEST NOT STARTED'
             stringsize1 = self.font35.getsize(string1)
-
-            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
+            self.clearImage()
+            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
-    def displayPilot(self, round, weather, besttimelist, pilotlist):
+
+    def displayPilot(self, round, weather, besttimelist, pilotlist, page=0):
         try:
-            #self.epd.Clear()
+
             column = 0
             yoffset = 0
             xoffset = 5
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
+            self.clearImage()
             string = 'ROUND ' + round
-            if len(weather)>0:
+            if len(weather) > 0:
                 string += ' - ' + '{:.0f}'.format(weather['s']) + 'm/s, ' + '{:.0f}'.format(weather['dir']) + '°'
             stringsize = self.font35.getsize(string)
-            draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
             for besttime in besttimelist:
                 if 'run' in besttime:
@@ -137,13 +201,13 @@ class Epaper:
                 else:
                     string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
                 stringsize = self.font24.getsize(string)
-                draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
                 yoffset += stringsize[1] + 1
 
             #yoffset += int(stringsize[1])
             string = 'REMAINING PILOTS :'
             stringsize = self.font35.getsize(string)
-            draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1]+1
             yoffset_title = yoffset
             yoffsetMax = 0
@@ -151,8 +215,8 @@ class Epaper:
             for pilot in pilotlist:
                 string = str(pilot['bib']) + ' : ' + pilot['pil']
                 stringsize = self.font24.getsize(string)
-                if stringsize[1]>yoffsetMax:
-                    yoffsetMax=stringsize[1]
+                if stringsize[1] > yoffsetMax:
+                    yoffsetMax = stringsize[1]
             for pilot in pilotlist:
                 string = str(pilot['bib']) + ' : ' + pilot['pil']
                 stringsize = self.font24.getsize(string)
@@ -174,15 +238,56 @@ class Epaper:
                     else:
                         xoffset = self.epd.width + 1
                         yoffset = yoffset_title
-                draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
+                self.draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
                 yoffset += yoffsetMax + 1
-
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
+            self.draw.line([(self.epd.width / 2, yoffset_title), (self.epd.width / 2, yoffset)], fill='black', width=0)
+            self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
+    def displayRanking(self):
+        try:
+            string0 = 'F3FDISPLAY Ranking'
+            stringsize0 = self.font35.getsize(string0)
 
+            string1 = 'IN CONSTRUCTION'
+            stringsize1 = self.font35.getsize(string1)
+            self.clearImage()
+            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(self.image))
+        except IOError as e:
+            logging.info(e)
+
+    def displayRoundTime(self):
+        try:
+            string0 = 'F3FDISPLAY RoundTime'
+            stringsize0 = self.font35.getsize(string0)
+
+            string1 = 'IN CONSTRUCTION'
+            stringsize1 = self.font35.getsize(string1)
+            self.clearImage()
+            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]),
+                           string0, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]),
+                           string1, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(self.image))
+        except IOError as e:
+            logging.info(e)
+
+    def displayWeather(self):
+        try:
+            string0 = 'F3FDISPLAY WEATHER'
+            stringsize0 = self.font35.getsize(string0)
+
+            string1 = 'IN CONSTRUCTION'
+            stringsize1 = self.font35.getsize(string1)
+            self.clearImage()
+            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
+            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
+            self.epd.display(self.epd.getbuffer(self.image))
+        except IOError as e:
+            logging.info(e)
     def sleep(self):
         try:
             logging.info("Goto Sleep...")
@@ -190,32 +295,29 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
+    def clearImage(self):
+        self.draw.rectangle([(0, 0), (self.epd.width, self.epd.height)], fill=255)
+
     def close(self):
         try:
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
+            self.clearImage()
             string0 = 'F3F DISPLAY'
             stringsize0 = self.font35.getsize(string0)
 
             string1 = 'BYE BYE'
             stringsize1 = self.font35.getsize(string1)
-            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]), string0,
+            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]), string0,
                       font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]), string1,
+            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]), string1,
                       font=self.font35, fill=0)
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
+            self.epd.display(self.epd.getbuffer(self.image))
+            self.image.close()
         except IOError as e:
             logging.info(e)
         if is_running_on_pi():
-            epd4in2.epdconfig.module_exit()
+            self.epd.epdconfig.module_exit()
 
-    def slot_btn_page(self):
-        print("slot btn_page")
 
-    def slot_btn_shutdown(self):
-        print("slot shuntdown")
-        self.close()
 
 if __name__ == '__main__':
 
@@ -223,13 +325,7 @@ if __name__ == '__main__':
         app = QtWidgets.QApplication(sys.argv)
     else:
         app = QCoreApplication(sys.argv)
-    display = Epaper()
-    #udp = udpreceive(4445)
-    tcp = tcpClient()
-    #udp.order_sig.connect(display.displayPilot)
-    tcp.order_sig.connect(display.displayPilot)
-    tcp.contestNotRunning_sig.connect(display.contestNotRunning)
-    tcp.notConnected_sig.connect(display.displayWaitingMsg)
+    displayCtrl = f3fdisplay_ctrl()
 
     sys.exit(app.exec_())
     display.close()

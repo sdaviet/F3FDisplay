@@ -41,7 +41,8 @@ import json
 
 default_config = \
 {
-    "btn": 12,
+    "btn_page": 13,
+    "btn_down": 14,
     "btn_restart_time": 4
 }
 

@@ -29,36 +29,57 @@ from F3FChrono.chrono import ConfigReader
 
 class f3fDisplay_gpio(QObject):
     signal_nextpage = pyqtSignal()
+    signal_downpage = pyqtSignal()
     signal_shutdown = pyqtSignal()
 
     def __init__(self, rpi):
         super().__init__()
         self.__debug = True
-        self.btn_enableEvent = True
+        self.btnPage_enableEvent = True
+        self.btnDown_enableEvent = True
         if rpi:
-            self.btn = Button(ConfigReader.config.conf['btn'])
-            self.btn.when_pressed = self.btn_pressed
-            self.btn.when_released = self.btn_released
+            self.btn_page = Button(ConfigReader.config.conf['btn_page'])
+            self.btn_page.when_pressed = self.btnPage_pressed
+            self.btn_page.when_released = self.btnPage_released
+            self.btn_down = Button(ConfigReader.config.conf['btn_down'])
+            self.btn_down.when_pressed = self.btnDown_pressed
+            self.btn_down.when_released = self.btnDown_released
+
             self.btn_restart_time = ConfigReader.config.conf['btn_restart_time']
             self.lasttimer = None
 
 
-    def btn_pressed(self):
+    def btnPage_pressed(self):
         if self.__debug:
-            print("gpio btnNext_pressed")
-        if self.btn_enableEvent:
-            self.btn_enableEvent = False
+            print("gpio btnPage_pressed")
+        if self.btnPage_enableEvent:
+            self.btnPage_enableEvent = False
             self.lasttimer = perf_counter()
 
-    def btn_released(self):
-        self.btn_enableEvent = True
+    def btnPage_released(self):
+        self.btnPage_enableEvent = True
         if perf_counter()-self.lasttimer<self.btn_restart_time:
             self.signal_nextpage.emit()
         else:
             self.signal_shutdown.emit()
         if self.__debug:
-            print("gpio signal btn_next_released")
+            print("gpio signal btnPage_released")
 
+    def btnDown_pressed(self):
+        if self.__debug:
+            print("gpio btnPage_pressed")
+        if self.btnDown_enableEvent:
+            self.btnDown_enableEvent = False
+            self.lasttimer = perf_counter()
+
+    def btnDown_released(self):
+        self.btnDown_enableEvent = True
+        if perf_counter()-self.lasttimer<self.btn_restart_time:
+            self.signal_downpage.emit()
+        else:
+            self.signal_shutdown.emit()
+        if self.__debug:
+            print("gpio signal btnDown_released")
 
 
 if __name__ == '__main__':

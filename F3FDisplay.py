@@ -30,17 +30,19 @@ from Utils import getnetwork_info
 import ConfigReader
 
 
-
 class status:
     notconnected = 0
     contest_notstarted = 1
     contest_inprogress = 2
+
+
 class mode:
     contest_None = 0
     contest_pilotlist = 1
     contest_weather = 2
     contest_roundtime = 3
     contest_ranking = 4
+
 
 class f3fdisplay_ctrl:
     def __init__(self):
@@ -49,6 +51,10 @@ class f3fdisplay_ctrl:
         self.mode = mode.contest_None
         self.status = status.notconnected
         self.pagenumber = 0
+        self.round = None
+        self.bestimelist = None
+        self.pilotlist = None
+        self.roundtimeslist = None
         try:
             logging.info("F3FDisplay init")
 
@@ -70,7 +76,8 @@ class f3fdisplay_ctrl:
 
         except KeyboardInterrupt:
             logging.info("ctrl + c:")
-    def setorderdataanddisplaypilot(self, round, weather, besttimelist, pilotlist):
+
+    def setorderdataanddisplaypilot(self, round, besttimelist, pilotlist, roundtimeslist):
         if self.status != status.contest_inprogress:
             self.mode = mode.contest_pilotlist
             self.status = status.contest_inprogress
@@ -78,17 +85,23 @@ class f3fdisplay_ctrl:
         self.round = round
         self.bestimelist = besttimelist
         self.pilotlist = pilotlist
-        self.epaper.displayPilot(round, weather, besttimelist, pilotlist, self.pagenumber)
+        self.roundtimeslist = roundtimeslist
+        if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
+            self.epaper.displayPilot(round, self.weather.getData()[2], besttimelist, pilotlist, self.pagenumber)
+        elif self.status == status.contest_inprogress and self.mode == mode.contest_roundtime:
+            self.epaper.displayRoundTime(self.round, self.weather.getData()[2], self.bestimelist, self.roundtimeslist)
 
     def contestNotRunning(self):
         self.epaper.displayContestNotRunning()
         self.status = status.contest_notstarted
         self.mode = mode.contest_None
+
     def displayWaitingMsg(self):
         ip, gw = getnetwork_info()
         self.epaper.displayWaitingMsg(ip, gw)
         self.status = status.notconnected
         self.mode = mode.contest_None
+
     def slot_btn_page(self):
         print("slot btn_page")
         if self.status == status.contest_notstarted:
@@ -102,28 +115,34 @@ class f3fdisplay_ctrl:
         if self.status == status.contest_inprogress:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
-                self.epaper.displayPilot(self.round, None, self.bestimelist, self.pilotlist)
+                self.epaper.displayPilot(self.round, self.weather.getData()[2], self.bestimelist, self.pilotlist)
             elif self.mode == mode.contest_weather:
                 self.epaper.displayWeather(self.weather.getData())
             elif self.mode == mode.contest_ranking:
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
-                self.epaper.displayRoundTime()
+                self.epaper.displayRoundTime(self.round, self.weather.getData()[2], self.bestimelist, self.roundtimeslist)
+
     def slot_down_page(self):
         print("slot_down_page")
+
     def slot_btn_shutdown(self):
         print("slot shuntdown")
         self.epaper.close()
+
     def slot_weather(self):
         if self.mode == mode.contest_weather:
             self.epaper.displayWeather(self.weather.getData())
+
     def incMode(self):
         self.mode = self.mode+1
         if self.mode > mode.contest_ranking:
             self.mode = mode.contest_pilotlist
 
+
 class weather(QTimer):
     weather_signal = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.timerinterval = ConfigReader.config.conf['weather_timer_s']
@@ -134,6 +153,8 @@ class weather(QTimer):
         self.list = []
         self.speed = 0
         self.dir = 0
+        self.data = [500, 0, 0, 0, 0, 0]
+
     def slot_windspeed(self, speed, unit):
         if self.data[0] > speed:
             self.data[0] = speed
@@ -142,12 +163,16 @@ class weather(QTimer):
         self.data[1] += speed
         self.data[2] += 1
         self.speed = speed
+
     def slot_winddir(self, dir, accu):
         self.data[4] += dir
         self.data[5] +=1
         self.dir = dir
-    def newdata(self): #[windmin, windsum, nbwind, windmax, dirsum, nbdir
+
+    def newdata(self):
+        #[windmin, windsum, nbwind, windmax, dirsum, nbdir]
         self.data = [500, 0, 0, 0, 0, 0]
+
     def slot_timer(self):
         print("weather slot timer")
         self.list.insert(0, self.data)
@@ -155,11 +180,12 @@ class weather(QTimer):
             del self.list[-1]
         self.newdata()
         self.weather_signal.emit()
+
     def getData(self):
-        return (self.speed, self.dir, self.list)
+        return self.speed, self.dir, self.list
+
 
 if __name__ == '__main__':
-
     if not is_running_on_pi():
         app = QtWidgets.QApplication(sys.argv)
     else:
@@ -167,7 +193,6 @@ if __name__ == '__main__':
     ConfigReader.init()
     ConfigReader.config = ConfigReader.Configuration('config.json')
     displayCtrl = f3fdisplay_ctrl()
-
     sys.exit(app.exec_())
     display.close()
     display.sleep()

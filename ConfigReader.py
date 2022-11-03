@@ -34,21 +34,23 @@ from __future__ import (
     absolute_import,
     )
 
+import json
+
 # Make Py2's str equivalent to Py3's
 str = type('')
-
-import json
 
 default_config = \
 {
     "btn_page": 13,
     "btn_down": 14,
-    "btn_restart_time": 4
+    "btn_restart_time": 4,
+    "weather_timer_s": 60,
+    "max_weather_data": 8
 }
 
 def init():
     global config
-    config=default_config
+    config = default_config
 
 class Configuration:
 

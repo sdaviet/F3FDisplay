@@ -19,20 +19,16 @@
 import sys
 import os
 import logging
-import json
-
-
-import unicodedata
+import collections
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QCoreApplication, QTimer
-
+from PyQt5.QtCore import QCoreApplication, QTimer, pyqtSignal
 from Utils import is_running_on_pi
-
-
-from UDPReceive import udpreceive
 from epaper import Epaper
 from tcpClient import tcpClient
+from UDPReceive import udpreceive
 from Utils import getnetwork_info
+import ConfigReader
+
 
 
 class status:
@@ -57,11 +53,16 @@ class f3fdisplay_ctrl:
             logging.info("F3FDisplay init")
 
             self.epaper = Epaper(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
-
+            self.weather = weather()
+            self.weather.weather_signal.connect(self.slot_weather)
             self.tcp = tcpClient()
             self.tcp.order_sig.connect(self.setorderdataanddisplaypilot)
             self.tcp.contestNotRunning_sig.connect(self.contestNotRunning)
             self.tcp.notConnected_sig.connect(self.displayWaitingMsg)
+            self.udp = udpreceive(4445)
+            self.udp.winddir_signal.connect(self.weather.slot_winddir)
+            self.udp.windspeed_signal.connect(self.weather.slot_windspeed)
+
             self.displayWaitingMsg()
 
         except IOError as e:
@@ -75,13 +76,12 @@ class f3fdisplay_ctrl:
             self.status = status.contest_inprogress
 
         self.round = round
-        self.weather = weather
         self.bestimelist = besttimelist
         self.pilotlist = pilotlist
         self.epaper.displayPilot(round, weather, besttimelist, pilotlist, self.pagenumber)
 
     def contestNotRunning(self):
-        self.epaper.contestNotRunning()
+        self.epaper.displayContestNotRunning()
         self.status = status.contest_notstarted
         self.mode = mode.contest_None
     def displayWaitingMsg(self):
@@ -91,12 +91,20 @@ class f3fdisplay_ctrl:
         self.mode = mode.contest_None
     def slot_btn_page(self):
         print("slot btn_page")
+        if self.status == status.contest_notstarted:
+            if self.mode == mode.contest_None:
+                self.mode = mode.contest_weather
+                self.epaper.displayWeather(self.weather.getData())
+            else:
+                self.mode = mode.contest_None
+                self.epaper.displayContestNotRunning()
+
         if self.status == status.contest_inprogress:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
-                self.epaper.displayPilot(self.round, self.weather, self.bestimelist, self.pilotlist)
+                self.epaper.displayPilot(self.round, None, self.bestimelist, self.pilotlist)
             elif self.mode == mode.contest_weather:
-                self.epaper.displayWeather()
+                self.epaper.displayWeather(self.weather.getData())
             elif self.mode == mode.contest_ranking:
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
@@ -106,11 +114,49 @@ class f3fdisplay_ctrl:
     def slot_btn_shutdown(self):
         print("slot shuntdown")
         self.epaper.close()
-
+    def slot_weather(self):
+        if self.mode == mode.contest_weather:
+            self.epaper.displayWeather(self.weather.getData())
     def incMode(self):
         self.mode = self.mode+1
         if self.mode > mode.contest_ranking:
             self.mode = mode.contest_pilotlist
+
+class weather(QTimer):
+    weather_signal = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+        self.timerinterval = ConfigReader.config.conf['weather_timer_s']
+        self.maxweatherdata = ConfigReader.config.conf['max_weather_data']
+        self.newdata()
+        self.timeout.connect(self.slot_timer)
+        self.start(self.timerinterval*1000)
+        self.list = []
+        self.speed = 0
+        self.dir = 0
+    def slot_windspeed(self, speed, unit):
+        if self.data[0] > speed:
+            self.data[0] = speed
+        if self.data[3] < speed:
+            self.data[3] = speed
+        self.data[1] += speed
+        self.data[2] += 1
+        self.speed = speed
+    def slot_winddir(self, dir, accu):
+        self.data[4] += dir
+        self.data[5] +=1
+        self.dir = dir
+    def newdata(self): #[windmin, windsum, nbwind, windmax, dirsum, nbdir
+        self.data = [500, 0, 0, 0, 0, 0]
+    def slot_timer(self):
+        print("weather slot timer")
+        self.list.insert(0, self.data)
+        if len(self.list) > self.maxweatherdata:
+            del self.list[-1]
+        self.newdata()
+        self.weather_signal.emit()
+    def getData(self):
+        return (self.speed, self.dir, self.list)
 
 if __name__ == '__main__':
 
@@ -118,6 +164,8 @@ if __name__ == '__main__':
         app = QtWidgets.QApplication(sys.argv)
     else:
         app = QCoreApplication(sys.argv)
+    ConfigReader.init()
+    ConfigReader.config = ConfigReader.Configuration('config.json')
     displayCtrl = f3fdisplay_ctrl()
 
     sys.exit(app.exec_())

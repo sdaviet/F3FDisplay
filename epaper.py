@@ -79,7 +79,7 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def contestNotRunning(self):
+    def displayContestNotRunning(self):
         try:
             string0 = 'F3FDISPLAY'
             stringsize0 = self.font35.getsize(string0)
@@ -102,7 +102,7 @@ class Epaper:
             xoffset = 5
             self.clearImage()
             string = 'ROUND ' + round
-            if len(weather) > 0:
+            if weather is not None and len(weather) > 0:
                 string += ' - ' + '{:.0f}'.format(weather['s']) + 'm/s, ' + '{:.0f}'.format(weather['dir']) + '°'
             stringsize = self.font35.getsize(string)
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
@@ -187,16 +187,34 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayWeather(self):
+    def displayWeather(self, data):
         try:
-            string0 = 'F3FDISPLAY WEATHER'
-            stringsize0 = self.font35.getsize(string0)
-
-            string1 = 'IN CONSTRUCTION'
-            stringsize1 = self.font35.getsize(string1)
+            yoffset = 0
             self.clearImage()
-            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
+            string = 'WEATHER STATION'
+            stringsize = self.font35.getsize(string)
+            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
+            yoffset += stringsize[1] + 1
+
+            string = '{:.0f}'.format(data[0]) + ' m/s, ' + '{:.0f}'.format(data[1]) + '°'
+            stringsize = self.font24.getsize(string)
+            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+            yoffset += stringsize[1] + 1
+
+            if len(data[2]) > 0:
+                string = f'{"Min"} {"Moy"} {"Max"} {"DirMoy"}'
+                stringsize = self.font24.getsize(string)
+                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+                yoffset += stringsize[1] + 1
+                for i in data[2][:8]:
+                    string = f'{i[0]:2.0f} {"   "} {(i[1]/i[2]):2.0f} {"   "} {i[3]:2.0f} {"     "} {(i[4]/i[5]):2.0f}'
+                    stringsize = self.font24.getsize(string)
+                    self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24,
+                                   fill=0)
+                    yoffset += stringsize[1] + 1
+                    if yoffset > self.epd.height:
+                        break
+
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)

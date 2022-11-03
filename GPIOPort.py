@@ -22,8 +22,7 @@ from time import perf_counter
 from PyQt5.QtCore import pyqtSignal, QObject, QTimer
 from gpiozero import Button, LED
 from PyQt5.QtCore import QObject, pyqtSignal
-from F3FChrono.chrono import ConfigReader
-
+import ConfigReader
 
 
 

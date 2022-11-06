@@ -23,7 +23,7 @@ import collections
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QCoreApplication, QTimer, pyqtSignal
 from Utils import is_running_on_pi
-from epaper import Epaper
+from epaper import Epaper, Epaper42, Epaper75
 from tcpClient import tcpClient
 from UDPReceive import udpreceive
 from Utils import getnetwork_info
@@ -57,8 +57,12 @@ class f3fdisplay_ctrl:
         self.roundtimeslist = None
         try:
             logging.info("F3FDisplay init")
-
-            self.epaper = Epaper(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
+            if ConfigReader.config.conf['display_type'] == 4.2:
+                self.epaper = Epaper42(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
+            elif ConfigReader.config.conf['display_type'] == 7.5:
+                self.epaper = Epaper75(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
+            else:
+                self.epaper = Epaper(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
             self.weather = weather()
             self.weather.weather_signal.connect(self.slot_weather)
             self.tcp = tcpClient()

@@ -45,7 +45,8 @@ default_config = \
     "btn_down": 14,
     "btn_restart_time": 4,
     "weather_timer_s": 60,
-    "max_weather_data": 8
+    "max_weather_data": 8,
+    "display_type": 4.2
 }
 
 def init():

@@ -22,8 +22,12 @@ from PyQt5.QtGui import QImage, QPixmap
 from PIL.ImageQt import ImageQt
 
 # Display resolution
-EPD_WIDTH = 400
-EPD_HEIGHT = 300
+EPD42_WIDTH = 400
+EPD42_HEIGHT = 300
+EPD75_WIDTH = 800
+EPD75_HEIGHT = 480
+EPDDEFAULT_WIDTH = 800
+EPDDEFAULT_HEIGHT = 480
 
 
 class fake_EPD(QtCore.QObject):
@@ -31,20 +35,19 @@ class fake_EPD(QtCore.QObject):
     signal_downpage = QtCore.pyqtSignal()
     signal_shutdown = QtCore.pyqtSignal()
 
-    def __init__(self, size):
+    def __init__(self, size=None):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
         if size == 4.2:
-            self.width = EPD_WIDTH
-            self.height = EPD_HEIGHT
-        #self.MainWindow = QtWidgets.QMainWindow()
-        #self.MainWindow.resize(2*self.width, 2*self.height)
-        #self.centralwidget = QtWidgets.QWidget(self.MainWindow)
-        #self.gridLayout_2 = QtWidgets.QGridLayout(self.centralwidget)
-        #self.lbl = QtWidgets.QLabel(self.centralwidget)
-        #self.lbl.setFixedSize(2*EPD_WIDTH, 2*EPD_HEIGHT)
-        #self.lbl.resize(2*EPD_WIDTH, 2*EPD_HEIGHT)
-        #self.MainWindow.show()
+            self.width = EPD42_WIDTH
+            self.height = EPD42_HEIGHT
+        elif size == 7.5:
+            self.width = EPD75_WIDTH
+            self.height = EPD75_HEIGHT
+        else:
+            self.width = EPDDEFAULT_WIDTH
+            self.height = EPDDEFAULT_HEIGHT
+
         self.MainWindow = QtWidgets.QMainWindow()
         self.centralwidget = QtWidgets.QWidget(self.MainWindow)
         self.centralwidget.setObjectName("centralwidget")

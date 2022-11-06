@@ -23,7 +23,7 @@ import json
 
 from Utils import is_running_on_pi
 if is_running_on_pi():
-    from lib.waveshare_epd import epd4in2
+    from lib.waveshare_epd import epd4in2, epd7in5
     from GPIOPort import f3fDisplay_gpio
 else:
     from fake_epd import fake_EPD
@@ -32,31 +32,12 @@ from PIL import Image, ImageDraw, ImageFont, ImageQt
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 
 class Epaper:
-    def __init__(self, slot_shutdown, slot_page, slot_page_down):
+    def __init__(self):
         super().__init__()
-        try:
-            rpi = is_running_on_pi()
-            if rpi:
-                self.epd = epd4in2.EPD()
-                self.gpio = f3fDisplay_gpio(rpi)
-                self.gpio.signal_shutdown.connect(slot_shutdown)
-                self.gpio.signal_nextpage.connect(slot_page)
-                self.gpio.signal_downpage.connect(slot_page_down)
-            else:
-                self.epd = fake_EPD(4.2)
-                self.epd.signal_shutdown.connect(slot_shutdown)
-                self.epd.signal_nextpage.connect(slot_page)
-                self.epd.signal_downpage.connect(slot_page_down)
-            self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
-            self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
-            self.font35 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 35)
-            self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            self.draw = ImageDraw.Draw(self.image)
 
-        finally:
-            logging.info("init and Clear")
-            self.epd.init()
-            self.epd.Clear()
+        self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
+        self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
+        self.font35 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 35)
 
     def displayWaitingMsg(self, ip, gateway):
         try:
@@ -292,3 +273,127 @@ class Epaper:
             logging.info(e)
         if is_running_on_pi():
             self.epd.epdconfig.module_exit()
+
+
+class Epaper42(Epaper):
+    def __init__(self, slot_shutdown, slot_page, slot_page_down):
+        super().__init__()
+        rpi = is_running_on_pi()
+        if rpi:
+            self.epd = epd4in2.EPD()
+            self.gpio = f3fDisplay_gpio(rpi)
+            self.gpio.signal_shutdown.connect(slot_shutdown)
+            self.gpio.signal_nextpage.connect(slot_page)
+            self.gpio.signal_downpage.connect(slot_page_down)
+        else:
+            self.epd = fake_EPD(4.2)
+            self.epd.signal_shutdown.connect(slot_shutdown)
+            self.epd.signal_nextpage.connect(slot_page)
+            self.epd.signal_downpage.connect(slot_page_down)
+        self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+        self.draw = ImageDraw.Draw(self.image)
+        logging.info("init and Clear")
+        self.epd.init()
+        self.epd.Clear()
+
+class Epaper75(Epaper):
+    def __init__(self, slot_shutdown, slot_page, slot_page_down):
+        super().__init__()
+
+        rpi = is_running_on_pi()
+        if rpi:
+            self.epd = epd7in5.EPD()
+            self.gpio = f3fDisplay_gpio(rpi)
+            self.gpio.signal_shutdown.connect(slot_shutdown)
+            self.gpio.signal_nextpage.connect(slot_page)
+            self.gpio.signal_downpage.connect(slot_page_down)
+        else:
+            self.epd = fake_EPD(7.5)
+            self.epd.signal_shutdown.connect(slot_shutdown)
+            self.epd.signal_nextpage.connect(slot_page)
+            self.epd.signal_downpage.connect(slot_page_down)
+        self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+        self.draw = ImageDraw.Draw(self.image)
+        logging.info("init and Clear")
+        self.epd.init()
+        self.epd.Clear()
+
+    def displayRoundTime(self, round, weather, bestimelist, roundtimeslist):
+        try:
+            column = 0
+            yoffset = 0
+            xoffset = 5
+            self.clearImage()
+            string = 'ROUND ' + round
+            if weather is not None and len(weather) > 0:
+                string += ' - ' + '{:.0f}'.format(weather[0][1]/weather[0][2]) + 'm/s, ' + '{:.0f}'.format(weather[0][4]/weather[0][5]) + '°'
+            stringsize = self.font35.getsize(string)
+            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
+            yoffset += stringsize[1] + 1
+            for besttime in bestimelist:
+                if 'run' in besttime:
+                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + besttime['run']
+                else:
+                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
+                stringsize = self.font24.getsize(string)
+                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+                yoffset += stringsize[1] + 1
+
+            # yoffset += int(stringsize[1])
+            string = 'PILOTS Times :'
+            stringsize = self.font35.getsize(string)
+            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
+            yoffset += stringsize[1] + 1
+            yoffset_title = yoffset
+            yoffsetMax = 0
+            # search yoffset Max
+            for pilot in roundtimeslist:
+                string = pilot[0] + ' : ' + pilot[2] + ' - ' + pilot[3]
+                stringsize = self.font24.getsize(string)
+                if stringsize[1] > yoffsetMax:
+                    yoffsetMax = stringsize[1]
+            for pilot in roundtimeslist:
+                string = pilot[0] + ' - ' + pilot[1] + ' : ' + pilot[2] + ' - ' + pilot[3]
+                stringsize = self.font24.getsize(string)
+
+                # check if pilot name length is ok in 2 column display
+                if stringsize[0] > (self.epd.width / 2 - 4):
+                    # string = string[:len(string) - int(stringsize[0]/(self.epd.width / 2 - 4))] + '.'
+                    string = string[:int(len(string) * (self.epd.width / 2 - 4) / stringsize[0]) - 1] + '.'
+                    # string = string[:16] + '.'
+                    # print(len(string), int(stringsize[0]/(self.epd.width / 2 - 4) + 2), len(string) - int(stringsize[0]/(self.epd.width / 2) + 2))
+                    stringsize = self.font24.getsize(string)
+
+                # Check end of display height and width
+                if yoffset + yoffsetMax > self.epd.height:
+                    if column < 1:
+                        xoffset += self.epd.width / 2
+                        yoffset = yoffset_title
+                        column += 1
+                    else:
+                        xoffset = self.epd.width + 1
+                        yoffset = yoffset_title
+                self.draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
+                yoffset += yoffsetMax + 1
+            self.draw.line([(self.epd.width / 2, yoffset_title), (self.epd.width / 2, yoffset)], fill='black', width=0)
+            self.epd.display(self.epd.getbuffer(self.image))
+        except IOError as e:
+            logging.info(e)
+
+class EpaperDefault(Epaper):
+    def __init__(self, slot_shutdown, slot_page, slot_page_down):
+        super().__init__()
+
+        rpi = is_running_on_pi()
+        if rpi:
+            logging('not supported')
+        else:
+            self.epd = fake_EPD()
+            self.epd.signal_shutdown.connect(slot_shutdown)
+            self.epd.signal_nextpage.connect(slot_page)
+            self.epd.signal_downpage.connect(slot_page_down)
+        self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
+        self.draw = ImageDraw.Draw(self.image)
+        logging.info("init and Clear")
+        self.epd.init()
+        self.epd.Clear()

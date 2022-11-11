@@ -2,7 +2,7 @@
  "btn_page": 13,
  "btn_down": 14,
  "btn_restart_time": 4,
- "weather_timer_s": 90,
- "max_weather_data": 8,
- "display_type": 7.5
+ "weather_timer_s": 6,
+ "max_weather_data": 100,
+ "display_type": 4.2
 }

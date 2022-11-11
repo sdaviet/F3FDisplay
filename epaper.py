@@ -30,6 +30,7 @@ else:
 
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
+import matplotlib.pyplot as plt
 
 class Epaper:
     def __init__(self):
@@ -227,20 +228,38 @@ class Epaper:
             stringsize = self.font24.getsize(string)
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
             yoffset += stringsize[1] + 1
+            min=[]
+            moy = []
+            max = []
+            for i in data[2]:
+                min.append(i[0])
+                moy.append(i[1]/i[2])
+                max.append(i[3])
+            plt.ioff()
+            plt.rcParams["figure.figsize"] = (3, 3)
+            plt.clf()
+            #plt.plot(min)
+            plt.plot(moy)
+            #plt.plot(max)
+            plt.savefig("weather.png", dpi=1000)
 
-            if len(data[2]) > 0:
-                string = f'{"Min"} {"Moy"} {"Max"} {"DirMoy"}'
-                stringsize = self.font24.getsize(string)
-                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
-                for i in data[2][:8]:
-                    string = f'{i[0]:2.0f} {"   "} {(i[1]/i[2]):2.0f} {"   "} {i[3]:2.0f} {"     "} {(i[4]/i[5]):2.0f}'
+            imgPlot = Image.open("weather.png")
+            self.image.paste(imgPlot.resize((self.epd.width, self.epd.height-yoffset)), (0, yoffset))
+
+            if False:
+                if len(data[2]) > 0:
+                    string = f'{"Min"} {"Moy"} {"Max"} {"DirMoy"}'
                     stringsize = self.font24.getsize(string)
-                    self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24,
-                                   fill=0)
+                    self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
                     yoffset += stringsize[1] + 1
-                    if yoffset > self.epd.height:
-                        break
+                    for i in data[2][:8]:
+                        string = f'{i[0]:2.0f} {"   "} {(i[1]/i[2]):2.0f} {"   "} {i[3]:2.0f} {"     "} {(i[4]/i[5]):2.0f}'
+                        stringsize = self.font24.getsize(string)
+                        self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24,
+                                       fill=0)
+                        yoffset += stringsize[1] + 1
+                        if yoffset > self.epd.height:
+                            break
 
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:

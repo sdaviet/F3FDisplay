@@ -91,9 +91,11 @@ class f3fdisplay_ctrl:
         self.pilotlist = pilotlist
         self.roundtimeslist = roundtimeslist
         if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
-            self.epaper.displayPilot(round, self.weather.getData()[2], besttimelist, pilotlist, self.pagenumber)
+            self.epaper.displayPilot(round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                     besttimelist, pilotlist, self.pagenumber)
         elif self.status == status.contest_inprogress and self.mode == mode.contest_roundtime:
-            self.epaper.displayRoundTime(self.round, self.weather.getData()[2], self.bestimelist, self.roundtimeslist)
+            self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                         self.bestimelist, self.roundtimeslist)
 
     def contestNotRunning(self):
         self.epaper.displayContestNotRunning()
@@ -120,14 +122,16 @@ class f3fdisplay_ctrl:
         if self.status == status.contest_inprogress:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
-                self.epaper.displayPilot(self.round, self.weather.getData()[2], self.bestimelist, self.pilotlist)
+                self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                         self.bestimelist, self.pilotlist)
             elif self.mode == mode.contest_weather:
                 x, min, moy, max, dir = self.weather.getData()
                 self.epaper.displayWeather(x, min, moy, max, dir)
             elif self.mode == mode.contest_ranking:
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
-                self.epaper.displayRoundTime(self.round, self.weather.getData()[2], self.bestimelist, self.roundtimeslist)
+                self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                             self.bestimelist, self.roundtimeslist)
 
     def slot_down_page(self):
         print("slot_down_page")
@@ -206,6 +210,16 @@ class weather(QTimer):
 
         return x, min, moy, max, dir
 
+    def getLastSpeedMoy(self):
+        if len(self.list)>0:
+            return self.list[-1][1]/self.list[-1][2]
+        else:
+            return 0
+    def getLastDirMoy(self):
+        if len(self.list)>0:
+            return self.list[-1][4] / self.list[-1][5]
+        else:
+            return 0
 
 if __name__ == '__main__':
     if not is_running_on_pi():

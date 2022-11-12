@@ -77,7 +77,7 @@ class Epaper:
             logging.info(e)
 
 
-    def displayPilot(self, round, weather, besttimelist, pilotlist, page=0):
+    def displayPilot(self, round, speed, dir, besttimelist, pilotlist, page=0):
         try:
 
             column = 0
@@ -85,8 +85,8 @@ class Epaper:
             xoffset = 5
             self.clearImage()
             string = 'ROUND ' + round
-            if weather is not None and len(weather) > 0:
-                string += ' - ' + '{:.0f}'.format(weather[0][1]/weather[0][2]) + 'm/s, ' + '{:.0f}'.format(weather[0][4]/weather[0][5]) + '°'
+
+            string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
             stringsize = self.font35.getsize(string)
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
@@ -154,15 +154,14 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayRoundTime(self, round, weather, bestimelist, roundtimeslist):
+    def displayRoundTime(self, round, speed, dir, bestimelist, roundtimeslist):
         try:
             column = 0
             yoffset = 0
             xoffset = 5
             self.clearImage()
             string = 'ROUND ' + round
-            if weather is not None and len(weather) > 0:
-                string += ' - ' + '{:.0f}'.format(weather[0][1]/weather[0][2]) + 'm/s, ' + '{:.0f}'.format(weather[0][4]/weather[0][5]) + '°'
+            string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
             stringsize = self.font35.getsize(string)
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
@@ -225,93 +224,98 @@ class Epaper:
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
 
-            string = '{:.0f}'.format(moy[-1]) + ' m/s, ' + '{:.0f}'.format(dir[-1]) + '°'
-            stringsize = self.font24.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-            yoffset += stringsize[1] + 1
+            if len(moy)>0:
+                string = '{:.0f}'.format(moy[-1]) + ' m/s, ' + '{:.0f}'.format(dir[-1]) + '°'
+                stringsize = self.font24.getsize(string)
+                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+                yoffset += stringsize[1] + 1
 
-            fig = go.Figure()
-            fig.update_layout(
-                autosize=False,
-                width=self.epd.width,
-                height=self.epd.height - yoffset,
-                margin=dict(
-                    l=2,
-                    r=10,
-                    b=2,
-                    t=10,
-                    pad=4
-                ),
-                paper_bgcolor="white",
-                plot_bgcolor="white",
-                xaxis=dict(
-                    showline=True,
-                    showgrid=True,
-                    showticklabels=True,
-                    linecolor='rgb(0, 0, 0)',
-                    linewidth=2,
-                    ticks='inside',
-                    tickfont=dict(
-                        family='Arial',
-                        size=12,
-                        color='rgb(0, 0, 0)',
+                fig = go.Figure()
+                fig.update_layout(
+                    autosize=False,
+                    width=self.epd.width,
+                    height=self.epd.height - yoffset,
+                    margin=dict(
+                        l=2,
+                        r=10,
+                        b=2,
+                        t=10,
+                        pad=4
                     ),
-                ),
-                yaxis=dict(
-                    showgrid=True,
-                    zeroline=False,
-                    showline=True,
-                    showticklabels=True,
-                    ticklabelposition="inside top",
-                    linecolor='rgb(0, 0, 0)',
-                    linewidth=2,
-                    ticks='',
-                    tickfont=dict(
-                        family='Arial',
-                        size=12,
-                        color='rgb(0, 0, 0)',
+                    paper_bgcolor="white",
+                    plot_bgcolor="white",
+                    xaxis=dict(
+                        showline=True,
+                        showgrid=True,
+                        showticklabels=True,
+                        linecolor='rgb(0, 0, 0)',
+                        linewidth=2,
+                        ticks='inside',
+                        tickfont=dict(
+                            family='Arial',
+                            size=12,
+                            color='rgb(0, 0, 0)',
+                        ),
                     ),
-                    autorange=False,
-                    range=[0, 30],
-                    gridcolor="grey",
-                ),
-            )
-            fig.add_trace(go.Scatter(
-                x=x + x[::-1],
-                y=max + min[::-1],
-                fill='toself',
-                fillcolor='rgba(0,0,0,0.3)',
-                line_color='rgba(0,0,0,0)',
-                showlegend=False,
-                name='Fair',
-            ))
-            fig.add_trace(go.Scatter(
-                x=x, y=moy,
-                line_color='rgb(0,0,0)',
-                showlegend=False,
-                name='Fair',
-            ))
-            buf = io.BytesIO()
-            plotio.write_image(fig, buf, 'png', scale=1)
-            buf.seek(0)
-            imgPlot = Image.open(buf)
-            self.image.paste(imgPlot, (0, yoffset))
+                    yaxis=dict(
+                        showgrid=True,
+                        zeroline=False,
+                        showline=True,
+                        showticklabels=True,
+                        ticklabelposition="inside top",
+                        linecolor='rgb(0, 0, 0)',
+                        linewidth=2,
+                        ticks='',
+                        tickfont=dict(
+                            family='Arial',
+                            size=12,
+                            color='rgb(0, 0, 0)',
+                        ),
+                        autorange=False,
+                        range=[0, 30.5],
+                        gridcolor="grey",
+                    ),
+                )
+                fig.add_trace(go.Scatter(
+                    x=x + x[::-1],
+                    y=max + min[::-1],
+                    fill='toself',
+                    fillcolor='rgba(0,0,0,0.3)',
+                    line_color='rgba(0,0,0,0)',
+                    showlegend=False,
+                    name='Fair',
+                ))
+                fig.add_trace(go.Scatter(
+                    x=x, y=moy,
+                    line_color='rgb(0,0,0)',
+                    showlegend=False,
+                    name='Fair',
+                ))
+                buf = io.BytesIO()
+                plotio.write_image(fig, buf, 'png', scale=1)
+                buf.seek(0)
+                imgPlot = Image.open(buf)
+                self.image.paste(imgPlot, (0, yoffset))
 
-            if False:
-                if len(data[2]) > 0:
-                    string = f'{"Min"} {"Moy"} {"Max"} {"DirMoy"}'
-                    stringsize = self.font24.getsize(string)
-                    self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                    yoffset += stringsize[1] + 1
-                    for i in data[2][:8]:
-                        string = f'{i[0]:2.0f} {"   "} {(i[1]/i[2]):2.0f} {"   "} {i[3]:2.0f} {"     "} {(i[4]/i[5]):2.0f}'
+                if False:
+                    if len(data[2]) > 0:
+                        string = f'{"Min"} {"Moy"} {"Max"} {"DirMoy"}'
                         stringsize = self.font24.getsize(string)
-                        self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24,
-                                       fill=0)
+                        self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
                         yoffset += stringsize[1] + 1
-                        if yoffset > self.epd.height:
-                            break
-
+                        for i in data[2][:8]:
+                            string = f'{i[0]:2.0f} {"   "} {(i[1]/i[2]):2.0f} {"   "} {i[3]:2.0f} {"     "} {(i[4]/i[5]):2.0f}'
+                            stringsize = self.font24.getsize(string)
+                            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24,
+                                           fill=0)
+                            yoffset += stringsize[1] + 1
+                            if yoffset > self.epd.height:
+                                break
+            else:
+                string = 'Waiting data'
+                stringsize = self.font24.getsize(string)
+                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
+                yoffset += stringsize[1] + 1
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)

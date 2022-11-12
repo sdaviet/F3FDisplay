@@ -22,27 +22,69 @@ from PyQt5.QtGui import QImage, QPixmap
 from PIL.ImageQt import ImageQt
 
 # Display resolution
-EPD_WIDTH = 400
-EPD_HEIGHT = 300
+EPD42_WIDTH = 400
+EPD42_HEIGHT = 300
+EPD75_WIDTH = 800
+EPD75_HEIGHT = 480
+EPDDEFAULT_WIDTH = 800
+EPDDEFAULT_HEIGHT = 480
 
 
-class EPD:
-    def __init__(self):
+class fake_EPD(QtCore.QObject):
+    signal_nextpage = QtCore.pyqtSignal()
+    signal_downpage = QtCore.pyqtSignal()
+    signal_shutdown = QtCore.pyqtSignal()
+
+    def __init__(self, size=None):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
-        self.width = EPD_WIDTH
-        self.height = EPD_HEIGHT
-        #self.MainWindow = QtWidgets.QMainWindow()
-        #self.MainWindow.resize(2*self.width, 2*self.height)
-        #self.centralwidget = QtWidgets.QWidget(self.MainWindow)
-        #self.gridLayout_2 = QtWidgets.QGridLayout(self.centralwidget)
-        #self.lbl = QtWidgets.QLabel(self.centralwidget)
-        #self.lbl.setFixedSize(2*EPD_WIDTH, 2*EPD_HEIGHT)
-        #self.lbl.resize(2*EPD_WIDTH, 2*EPD_HEIGHT)
-        #self.MainWindow.show()
+        if size == 4.2:
+            self.width = EPD42_WIDTH
+            self.height = EPD42_HEIGHT
+        elif size == 7.5:
+            self.width = EPD75_WIDTH
+            self.height = EPD75_HEIGHT
+        else:
+            self.width = EPDDEFAULT_WIDTH
+            self.height = EPDDEFAULT_HEIGHT
 
-        self.lbl = QtWidgets.QLabel()
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.centralwidget = QtWidgets.QWidget(self.MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
+        self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.MainWindow.setCentralWidget(self.centralwidget)
+        self.btnPage = QtWidgets.QPushButton(self.centralwidget)
+        self.btnPage.setObjectName("btn_page")
+        self.btnPage.setText("Btn Page")
+        self.gridLayout.addWidget(self.btnPage)
+        self.btnDown = QtWidgets.QPushButton(self.centralwidget)
+        self.btnDown.setObjectName("btn_down")
+        self.btnDown.setText("Btn Down")
+        self.gridLayout.addWidget(self.btnDown)
+        self.btnShutDown = QtWidgets.QPushButton(self.centralwidget)
+        self.btnShutDown.setObjectName("btn_shutdown")
+        self.btnShutDown.setText("btn Shutdown")
+        self.gridLayout.addWidget(self.btnShutDown)
 
+        self.lbl = QtWidgets.QLabel(self.centralwidget)
+        self.gridLayout.addWidget(self.lbl)
+
+        self.btnShutDown.clicked.connect(self.btn_shutdown_clicked)
+        self.btnPage.clicked.connect(self.btn_page_clicked)
+        self.btnDown.clicked.connect(self.btn_down_clicked)
+        self.MainWindow.show()
+
+    def btn_shutdown_clicked(self):
+        self.signal_shutdown.emit()
+
+    def btn_page_clicked(self):
+        self.signal_nextpage.emit()
+    def btn_down_clicked(self):
+        self.signal_downpage.emit()
 
     def reset(self):
         logging.info("reset")

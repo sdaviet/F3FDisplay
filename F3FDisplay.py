@@ -19,206 +19,216 @@
 import sys
 import os
 import logging
-import json
-
-
-import unicodedata
+import collections
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QCoreApplication, QTimer
-
+from PyQt5.QtCore import QCoreApplication, QTimer, pyqtSignal
 from Utils import is_running_on_pi
-
-if is_running_on_pi():
-    from lib.waveshare_epd import epd4in2
-else:
-    from fake_epd import EPD
-import time
-from PIL import Image, ImageDraw, ImageFont, ImageQt
-from UDPReceive import udpreceive
+from epaper import Epaper, Epaper42, Epaper75
 from tcpClient import tcpClient
+from UDPReceive import udpreceive
 from Utils import getnetwork_info
+import ConfigReader
 
 
-picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
+class status:
+    notconnected = 0
+    contest_notstarted = 1
+    contest_inprogress = 2
 
 
-class Epaper:
+class mode:
+    contest_None = 0
+    contest_pilotlist = 1
+    contest_weather = 2
+    contest_roundtime = 3
+    contest_ranking = 4
+
+
+class f3fdisplay_ctrl:
     def __init__(self):
         super().__init__()
         logging.basicConfig(level=logging.INFO)
-        self.ip, self.gateway = getnetwork_info()
+        self.mode = mode.contest_None
+        self.status = status.notconnected
+        self.pagenumber = 0
+        self.round = None
+        self.bestimelist = None
+        self.pilotlist = None
+        self.roundtimeslist = None
         try:
-            logging.info("F3FDisplay")
-
-            if is_running_on_pi():
-                self.epd = epd4in2.EPD()
+            logging.info("F3FDisplay init")
+            if ConfigReader.config.conf['display_type'] == 4.2:
+                self.epaper = Epaper42(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
+            elif ConfigReader.config.conf['display_type'] == 7.5:
+                self.epaper = Epaper75(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
             else:
-                self.epd = EPD()
+                self.epaper = Epaper(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
+            self.weather = weather()
+            self.weather.weather_signal.connect(self.slot_weather)
+            self.tcp = tcpClient()
+            self.tcp.order_sig.connect(self.setorderdataanddisplaypilot)
+            self.tcp.contestNotRunning_sig.connect(self.contestNotRunning)
+            self.tcp.notConnected_sig.connect(self.displayWaitingMsg)
+            self.udp = udpreceive(4445)
+            self.udp.winddir_signal.connect(self.weather.slot_winddir)
+            self.udp.windspeed_signal.connect(self.weather.slot_windspeed)
 
-            logging.info("init and Clear")
-            self.epd.init()
-            self.epd.Clear()
-            self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
-            self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
-            self.font35 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 35)
             self.displayWaitingMsg()
+
         except IOError as e:
             logging.info(e)
 
         except KeyboardInterrupt:
             logging.info("ctrl + c:")
 
-    def displayWaitingMsg(self):
-        try:
+    def setorderdataanddisplaypilot(self, round, besttimelist, pilotlist, roundtimeslist):
+        if self.status != status.contest_inprogress:
+            self.mode = mode.contest_pilotlist
+            self.status = status.contest_inprogress
 
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
-            self.ip, self.gateway = getnetwork_info()
-            stringIp = "IP:" + self.ip
-            stringGw = "GW:" + self.gateway
-            stringsizeIp = self.font35.getsize(stringIp)
-            stringsizeGw = self.font35.getsize(stringGw)
-            string0 = 'F3FDISPLAY PILOTS'
-            stringsize0 = self.font35.getsize(string0)
-
-            string1 = 'NOT CONNECTED'
-            stringsize1 = self.font35.getsize(string1)
-
-            draw.text((int(self.epd.width / 2 - stringsizeIp[0] / 2), 20), stringIp, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsizeGw[0] / 2), 60), stringGw, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
-        except IOError as e:
-            logging.info(e)
+        self.round = round
+        self.bestimelist = besttimelist
+        self.pilotlist = pilotlist
+        self.roundtimeslist = roundtimeslist
+        if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
+            self.epaper.displayPilot(round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                     besttimelist, pilotlist, self.pagenumber)
+        elif self.status == status.contest_inprogress and self.mode == mode.contest_roundtime:
+            self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                         self.bestimelist, self.roundtimeslist)
 
     def contestNotRunning(self):
-        try:
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
+        self.epaper.displayContestNotRunning()
+        self.status = status.contest_notstarted
+        self.mode = mode.contest_None
 
-            string0 = 'F3FDISPLAY PILOTS'
-            stringsize0 = self.font35.getsize(string0)
+    def displayWaitingMsg(self):
+        ip, gw = getnetwork_info()
+        self.epaper.displayWaitingMsg(ip, gw)
+        self.status = status.notconnected
+        self.mode = mode.contest_None
 
-            string1 = 'CONTEST NOT STARTED'
-            stringsize1 = self.font35.getsize(string1)
+    def slot_btn_page(self):
+        print("slot btn_page")
+        if self.status == status.contest_notstarted:
+            if self.mode == mode.contest_None:
+                self.mode = mode.contest_weather
+                x, min, moy, max, dir = self.weather.getData()
+                self.epaper.displayWeather(x, min, moy, max, dir)
+            else:
+                self.mode = mode.contest_None
+                self.epaper.displayContestNotRunning()
 
-            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height/2-stringsize0[1]), string0, font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height/2+stringsize1[1]), string1, font=self.font35, fill=0)
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
-        except IOError as e:
-            logging.info(e)
+        if self.status == status.contest_inprogress:
+            self.incMode()
+            if self.mode == mode.contest_pilotlist:
+                self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                         self.bestimelist, self.pilotlist)
+            elif self.mode == mode.contest_weather:
+                x, min, moy, max, dir = self.weather.getData()
+                self.epaper.displayWeather(x, min, moy, max, dir)
+            elif self.mode == mode.contest_ranking:
+                self.epaper.displayRanking()
+            elif self.mode == mode.contest_roundtime:
+                self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                             self.bestimelist, self.roundtimeslist)
 
-    def displayPilot(self, round, weather, besttimelist, pilotlist):
-        try:
-            #self.epd.Clear()
-            column = 0
-            yoffset = 0
-            xoffset = 5
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
-            string = 'ROUND ' + round
-            if len(weather)>0:
-                string += ' - ' + '{:.0f}'.format(weather['s']) + 'm/s, ' + '{:.0f}'.format(weather['dir']) + '°'
-            stringsize = self.font35.getsize(string)
-            draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
-            for besttime in besttimelist:
-                if 'run' in besttime:
-                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + besttime['run']
-                else:
-                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
-                stringsize = self.font24.getsize(string)
-                draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+    def slot_down_page(self):
+        print("slot_down_page")
 
-            #yoffset += int(stringsize[1])
-            string = 'REMAINING PILOTS :'
-            stringsize = self.font35.getsize(string)
-            draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1]+1
-            yoffset_title = yoffset
-            yoffsetMax = 0
-            #search yoffset Max
-            for pilot in pilotlist:
-                string = str(pilot['bib']) + ' : ' + pilot['pil']
-                stringsize = self.font24.getsize(string)
-                if stringsize[1]>yoffsetMax:
-                    yoffsetMax=stringsize[1]
-            for pilot in pilotlist:
-                string = str(pilot['bib']) + ' : ' + pilot['pil']
-                stringsize = self.font24.getsize(string)
+    def slot_btn_shutdown(self):
+        print("slot shuntdown")
+        self.epaper.close()
 
-                # check if pilot name length is ok in 2 column display
-                if stringsize[0] > (self.epd.width / 2 - 4):
-                    #string = string[:len(string) - int(stringsize[0]/(self.epd.width / 2 - 4))] + '.'
-                    string = string[:int(len(string)*(self.epd.width / 2 - 4)/stringsize[0])-1] + '.'
-                    #string = string[:16] + '.'
-                    #print(len(string), int(stringsize[0]/(self.epd.width / 2 - 4) + 2), len(string) - int(stringsize[0]/(self.epd.width / 2) + 2))
-                    stringsize = self.font24.getsize(string)
+    def slot_weather(self):
+        if self.mode == mode.contest_weather:
+            x, min, moy, max, dir = self.weather.getData()
+            self.epaper.displayWeather(x, min, moy, max, dir)
 
-                # Check end of display height and width
-                if yoffset+yoffsetMax > self.epd.height:
-                    if column < 1:
-                        xoffset += self.epd.width / 2
-                        yoffset = yoffset_title
-                        column += 1
-                    else:
-                        xoffset = self.epd.width + 1
-                        yoffset = yoffset_title
-                draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-                yoffset += yoffsetMax + 1
-
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
-        except IOError as e:
-            logging.info(e)
+    def incMode(self):
+        self.mode = self.mode+1
+        if self.mode > mode.contest_ranking:
+            self.mode = mode.contest_pilotlist
 
 
-    def sleep(self):
-        try:
-            logging.info("Goto Sleep...")
-            self.epd.sleep()
-        except IOError as e:
-            logging.info(e)
+class weather(QTimer):
+    weather_signal = pyqtSignal()
 
-    def close(self):
-        try:
-            image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
-            draw = ImageDraw.Draw(image)
-            string0 = 'F3F DISPLAY'
-            stringsize0 = self.font35.getsize(string0)
+    def __init__(self):
+        super().__init__()
+        self.timerinterval = ConfigReader.config.conf['weather_timer_s']
+        self.maxweatherdata = ConfigReader.config.conf['max_weather_data']
+        self.newdata()
+        self.timeout.connect(self.slot_timer)
+        self.start(self.timerinterval*1000)
+        self.list = []
+        self.speed = 0
+        self.dir = 0
+        self.data = [500, 0, 0, 0, 0, 0]
 
-            string1 = 'BYE BYE'
-            stringsize1 = self.font35.getsize(string1)
-            draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]), string0,
-                      font=self.font35, fill=0)
-            draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]), string1,
-                      font=self.font35, fill=0)
-            self.epd.display(self.epd.getbuffer(image))
-            image.close()
-        except IOError as e:
-            logging.info(e)
-        if is_running_on_pi():
-            epd4in2.epdconfig.module_exit()
+    def slot_windspeed(self, speed, unit):
+        if self.data[0] > speed:
+            self.data[0] = speed
+        if self.data[3] < speed:
+            self.data[3] = speed
+        self.data[1] += speed
+        self.data[2] += 1
+        self.speed = speed
 
+    def slot_winddir(self, dir, accu):
+        self.data[4] += dir
+        self.data[5] +=1
+        self.dir = dir
+
+    def newdata(self):
+        #[windmin, windsum, nbwind, windmax, dirsum, nbdir]
+        self.data = [500, 0, 0, 0, 0, 0]
+
+    def slot_timer(self):
+        print("weather slot timer")
+        if self.data[5] > 0:
+            self.list.append(self.data)
+        if len(self.list) > self.maxweatherdata:
+            del self.list[0]
+        self.newdata()
+        self.weather_signal.emit()
+
+    def getData(self):
+        time = 0
+        x = []
+        min = []
+        moy = []
+        max = []
+        dir = []
+        for i in self.list:
+            x.append(time * self.timerinterval/60)
+            time +=1
+            min.append(i[0])
+            moy.append(i[1]/i[2])
+            max.append(i[3])
+            dir.append(i[4]/i[5])
+
+        return x, min, moy, max, dir
+
+    def getLastSpeedMoy(self):
+        if len(self.list)>0:
+            return self.list[-1][1]/self.list[-1][2]
+        else:
+            return 0
+    def getLastDirMoy(self):
+        if len(self.list)>0:
+            return self.list[-1][4] / self.list[-1][5]
+        else:
+            return 0
 
 if __name__ == '__main__':
-
     if not is_running_on_pi():
         app = QtWidgets.QApplication(sys.argv)
     else:
         app = QCoreApplication(sys.argv)
-    display = Epaper()
-    #udp = udpreceive(4445)
-    tcp = tcpClient()
-    #udp.order_sig.connect(display.displayPilot)
-    tcp.order_sig.connect(display.displayPilot)
-    tcp.contestNotRunning_sig.connect(display.contestNotRunning)
-    tcp.notConnected_sig.connect(display.displayWaitingMsg)
-
+    ConfigReader.init()
+    ConfigReader.config = ConfigReader.Configuration('config.json')
+    displayCtrl = f3fdisplay_ctrl()
     sys.exit(app.exec_())
     display.close()
     display.sleep()

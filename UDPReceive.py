@@ -30,12 +30,14 @@ RACEORDERMSG = "Order"
 
 
 class udpreceive(QThread):
-    #signal round number, group best time, ramaining pilots
-    order_sig = pyqtSignal(str, dict, list, list)
+    # parameters : value, unit
+    windspeed_signal = pyqtSignal(float, str)
+    # parameters : direction, accu voltage
+    winddir_signal = pyqtSignal(float, float)
 
     def __init__(self, udpport):
         super().__init__()
-        self.__debug = True
+        self.__debug = False
         self.port = udpport
 
 
@@ -62,22 +64,11 @@ class udpreceive(QThread):
                 if (m[0] == 'terminated'):
                     self.terminate()
                     break
-                if m[0] == RACEORDERMSG:
-                    orderstring = data.decode('utf-8')[len(m[0])+1:]
-                    if self.__debug:
-                        print('datasize:'+str(len(orderstring)))
-                        print(orderstring)
-                    orderjson = json.loads(orderstring)
-                    if 'weather' in orderjson:
-                        self.order_sig.emit(orderjson['round'],
-                                            orderjson['w'],
-                                            orderjson['best'],
-                                            orderjson['remain'])
-                    else:
-                        self.order_sig.emit(orderjson['round'],
-                                            {},
-                                            orderjson['best'],
-                                            orderjson['remain'])
+                if m[0] == 'wind_speed':
+                    self.windspeed_signal.emit(float(m[1]), str(m[2]))
+                elif m[0] == 'wind_dir':
+                    self.winddir_signal.emit(float(m[1]), float(m[2]))
+
             except socket.error as msg:
                 print('udp receive error {}'.format(msg))
                 logging.warning('udp receive error {}'.format(msg))

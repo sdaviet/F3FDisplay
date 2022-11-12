@@ -35,7 +35,7 @@ class tcpClient_Status():
     Close = 5
 
 class tcpClient(QThread):
-    order_sig = pyqtSignal(str, dict, list, list)
+    order_sig = pyqtSignal(str, list, list, list)
     contestNotRunning_sig = pyqtSignal()
     notConnected_sig = pyqtSignal()
 
@@ -86,7 +86,7 @@ class tcpClient(QThread):
                     self.getChronoStatus()
             elif self.status == tcpClient_Status.InProgress:
                 try:
-                    data = self.Client.recv(1024)
+                    data = self.Client.recv(2048)
                 except socket.error as e:
                     print(str(e))
                 else:
@@ -130,13 +130,7 @@ class tcpClient(QThread):
                     print('datasize:' + str(len(orderstring)))
                     print(orderstring)
                 orderjson = json.loads(orderstring)
-                if 'weather' in orderjson:
-                    self.order_sig.emit(orderjson['round'],
-                                        orderjson['w'],
-                                        orderjson['best'],
-                                        orderjson['remain'])
-                else:
-                    self.order_sig.emit(orderjson['round'],
-                                        {},
-                                        orderjson['best'],
-                                        orderjson['remain'])
+                self.order_sig.emit(orderjson['round'],
+                                    orderjson['best'],
+                                    orderjson['remain'],
+                                    orderjson['roundtime'])

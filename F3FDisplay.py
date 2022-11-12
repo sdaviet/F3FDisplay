@@ -146,7 +146,7 @@ class f3fdisplay_ctrl:
         print("slot shuntdown")
         self.epaper.close()
         if is_running_on_pi():
-            os.system('shutdown now')
+            os.system("sudo shutdown now")
         exit()
 
     def slot_weather(self):

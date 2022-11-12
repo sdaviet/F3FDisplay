@@ -112,24 +112,30 @@ class f3fdisplay_ctrl:
         print("slot btn_page")
         if self.status == status.contest_notstarted:
             if self.mode == mode.contest_None:
+                print("page weather")
                 self.mode = mode.contest_weather
                 x, min, moy, max, dir = self.weather.getData()
                 self.epaper.displayWeather(x, min, moy, max, dir)
             else:
+                print("page contest not running")
                 self.mode = mode.contest_None
                 self.epaper.displayContestNotRunning()
 
         if self.status == status.contest_inprogress:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
+                print("page remaining pilot")
                 self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                          self.bestimelist, self.pilotlist)
             elif self.mode == mode.contest_weather:
+                print("page weather")
                 x, min, moy, max, dir = self.weather.getData()
                 self.epaper.displayWeather(x, min, moy, max, dir)
             elif self.mode == mode.contest_ranking:
+                print("page contest ranking")
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
+                print("page contest current round time")
                 self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                              self.bestimelist, self.roundtimeslist)
 
@@ -139,6 +145,9 @@ class f3fdisplay_ctrl:
     def slot_btn_shutdown(self):
         print("slot shuntdown")
         self.epaper.close()
+        if is_running_on_pi():
+            os.system('shutdown now')
+        exit()
 
     def slot_weather(self):
         if self.mode == mode.contest_weather:

@@ -328,8 +328,7 @@ class Epaper:
             self.image.close()
         except IOError as e:
             logging.info(e)
-        if is_running_on_pi():
-            self.epd.epdconfig.module_exit()
+
 
 
 class Epaper42(Epaper):

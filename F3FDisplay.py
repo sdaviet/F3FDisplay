@@ -111,7 +111,8 @@ class f3fdisplay_ctrl:
         if self.status == status.contest_notstarted:
             if self.mode == mode.contest_None:
                 self.mode = mode.contest_weather
-                self.epaper.displayWeather(self.weather.getData())
+                x, min, moy, max, dir = self.weather.getData()
+                self.epaper.displayWeather(x, min, moy, max, dir)
             else:
                 self.mode = mode.contest_None
                 self.epaper.displayContestNotRunning()
@@ -121,7 +122,8 @@ class f3fdisplay_ctrl:
             if self.mode == mode.contest_pilotlist:
                 self.epaper.displayPilot(self.round, self.weather.getData()[2], self.bestimelist, self.pilotlist)
             elif self.mode == mode.contest_weather:
-                self.epaper.displayWeather(self.weather.getData())
+                x, min, moy, max, dir = self.weather.getData()
+                self.epaper.displayWeather(x, min, moy, max, dir)
             elif self.mode == mode.contest_ranking:
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
@@ -136,7 +138,8 @@ class f3fdisplay_ctrl:
 
     def slot_weather(self):
         if self.mode == mode.contest_weather:
-            self.epaper.displayWeather(self.weather.getData())
+            x, min, moy, max, dir = self.weather.getData()
+            self.epaper.displayWeather(x, min, moy, max, dir)
 
     def incMode(self):
         self.mode = self.mode+1
@@ -187,7 +190,21 @@ class weather(QTimer):
         self.weather_signal.emit()
 
     def getData(self):
-        return self.speed, self.dir, self.list
+        time = 0
+        x = []
+        min = []
+        moy = []
+        max = []
+        dir = []
+        for i in self.list:
+            x.append(time * self.timerinterval/60)
+            time +=1
+            min.append(i[0])
+            moy.append(i[1]/i[2])
+            max.append(i[3])
+            dir.append(i[4]/i[5])
+
+        return x, min, moy, max, dir
 
 
 if __name__ == '__main__':

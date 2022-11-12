@@ -20,7 +20,7 @@ import sys
 import os
 import logging
 import json
-
+import io
 from Utils import is_running_on_pi
 if is_running_on_pi():
     from lib.waveshare_epd import epd4in2, epd7in5
@@ -30,7 +30,8 @@ else:
 
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.io as plotio
 
 class Epaper:
     def __init__(self):
@@ -215,7 +216,7 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayWeather(self, data):
+    def displayWeather(self, x, min, moy, max, dir):
         try:
             yoffset = 0
             self.clearImage()
@@ -224,27 +225,77 @@ class Epaper:
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
             yoffset += stringsize[1] + 1
 
-            string = '{:.0f}'.format(data[0]) + ' m/s, ' + '{:.0f}'.format(data[1]) + '°'
+            string = '{:.0f}'.format(moy[-1]) + ' m/s, ' + '{:.0f}'.format(dir[-1]) + '°'
             stringsize = self.font24.getsize(string)
             self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
             yoffset += stringsize[1] + 1
-            min=[]
-            moy = []
-            max = []
-            for i in data[2]:
-                min.append(i[0])
-                moy.append(i[1]/i[2])
-                max.append(i[3])
-            plt.ioff()
-            plt.rcParams["figure.figsize"] = (3, 3)
-            plt.clf()
-            #plt.plot(min)
-            plt.plot(moy)
-            #plt.plot(max)
-            plt.savefig("weather.png", dpi=1000)
 
-            imgPlot = Image.open("weather.png")
-            self.image.paste(imgPlot.resize((self.epd.width, self.epd.height-yoffset)), (0, yoffset))
+            fig = go.Figure()
+            fig.update_layout(
+                autosize=False,
+                width=self.epd.width,
+                height=self.epd.height - yoffset,
+                margin=dict(
+                    l=2,
+                    r=10,
+                    b=2,
+                    t=10,
+                    pad=4
+                ),
+                paper_bgcolor="white",
+                plot_bgcolor="white",
+                xaxis=dict(
+                    showline=True,
+                    showgrid=True,
+                    showticklabels=True,
+                    linecolor='rgb(0, 0, 0)',
+                    linewidth=2,
+                    ticks='inside',
+                    tickfont=dict(
+                        family='Arial',
+                        size=12,
+                        color='rgb(0, 0, 0)',
+                    ),
+                ),
+                yaxis=dict(
+                    showgrid=True,
+                    zeroline=False,
+                    showline=True,
+                    showticklabels=True,
+                    ticklabelposition="inside top",
+                    linecolor='rgb(0, 0, 0)',
+                    linewidth=2,
+                    ticks='',
+                    tickfont=dict(
+                        family='Arial',
+                        size=12,
+                        color='rgb(0, 0, 0)',
+                    ),
+                    autorange=False,
+                    range=[0, 30],
+                    gridcolor="grey",
+                ),
+            )
+            fig.add_trace(go.Scatter(
+                x=x + x[::-1],
+                y=max + min[::-1],
+                fill='toself',
+                fillcolor='rgba(0,0,0,0.3)',
+                line_color='rgba(0,0,0,0)',
+                showlegend=False,
+                name='Fair',
+            ))
+            fig.add_trace(go.Scatter(
+                x=x, y=moy,
+                line_color='rgb(0,0,0)',
+                showlegend=False,
+                name='Fair',
+            ))
+            buf = io.BytesIO()
+            plotio.write_image(fig, buf, 'png', scale=1)
+            buf.seek(0)
+            imgPlot = Image.open(buf)
+            self.image.paste(imgPlot, (0, yoffset))
 
             if False:
                 if len(data[2]) > 0:

@@ -23,7 +23,7 @@ import json
 import io
 from Utils import is_running_on_pi
 if is_running_on_pi():
-    from lib.waveshare_epd import epd4in2, epd7in5
+    from lib.waveshare_epd import epd4in2, epd7in5_V2
     from GPIOPort import f3fDisplay_gpio
 else:
     from fake_epd import fake_EPD
@@ -358,7 +358,7 @@ class Epaper75(Epaper):
 
         rpi = is_running_on_pi()
         if rpi:
-            self.epd = epd7in5.EPD()
+            self.epd = epd7in5_V2.EPD()
             self.gpio = f3fDisplay_gpio(rpi)
             self.gpio.signal_shutdown.connect(slot_shutdown)
             self.gpio.signal_nextpage.connect(slot_page)

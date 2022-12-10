@@ -195,7 +195,7 @@ class weather(QTimer):
 
     def slot_timer(self):
         print("weather slot timer")
-        if self.data[5] > 0:
+        if self.data[3] > 0:
             self.list.append(self.data)
         if len(self.list) > self.maxweatherdata:
             del self.list[0]
@@ -215,7 +215,8 @@ class weather(QTimer):
             min.append(i[0])
             moy.append(i[1]/i[2])
             max.append(i[3])
-            dir.append(i[4]/i[5])
+            if i[5]>0:
+                dir.append(i[4]/i[5])
 
         return x, min, moy, max, dir
 

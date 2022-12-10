@@ -221,7 +221,9 @@ class Epaper:
             yoffset += stringsize[1] + 1
 
             if len(moy)>0:
-                string = '{:.0f}'.format(moy[-1]) + ' m/s, ' + '{:.0f}'.format(dir[-1]) + '°'
+                string = '{:.0f}'.format(moy[-1]) + ' m/s'
+                if len(dir) > 0:
+                    string += ', {:.0f}'.format(dir[-1]) + '°'
                 stringsize = self.font24.getsize(string)
                 self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
                 yoffset += stringsize[1] + 1

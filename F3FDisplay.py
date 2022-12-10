@@ -211,25 +211,24 @@ class weather(QTimer):
         dir = []
         for i in self.list:
             x.append(time * self.timerinterval/60)
-            time +=1
+            time += 1
             min.append(i[0])
             moy.append(i[1]/i[2])
             max.append(i[3])
-            if i[5]>0:
+            if i[5] > 0:
                 dir.append(i[4]/i[5])
-
         return x, min, moy, max, dir
 
     def getLastSpeedMoy(self):
-        if len(self.list)>0:
+        if len(self.list) > 0:
             return self.list[-1][1]/self.list[-1][2]
         else:
             return 0
     def getLastDirMoy(self):
-        if len(self.list)>0:
-            return self.list[-1][4] / self.list[-1][5]
-        else:
-            return 0
+        if len(self.list) > 0:
+            if self.list[-1][5] > 0:
+                return self.list[-1][4] / self.list[-1][5]
+        return 0
 
 if __name__ == '__main__':
     if not is_running_on_pi():

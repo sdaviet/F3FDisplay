@@ -91,8 +91,9 @@ class f3fdisplay_ctrl:
         self.pilotlist = pilotlist
         self.roundtimeslist = roundtimeslist
         if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
+            x, min, moy, max, dir = self.weather.getData()
             self.epaper.displayPilot(round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                     besttimelist, pilotlist, self.pagenumber)
+                                     self.bestimelist, self.pilotlist, self.pagenumber, x, min, max, moy, dir)
         elif self.status == status.contest_inprogress and self.mode == mode.contest_roundtime:
             self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                          self.bestimelist, self.roundtimeslist)
@@ -125,8 +126,9 @@ class f3fdisplay_ctrl:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
                 print("page remaining pilot")
+                x, min, moy, max, dir = self.weather.getData()
                 self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                         self.bestimelist, self.pilotlist)
+                                         self.bestimelist, self.pilotlist, self.pagenumber, x, min, max, moy, dir)
             elif self.mode == mode.contest_weather:
                 print("page weather")
                 x, min, moy, max, dir = self.weather.getData()

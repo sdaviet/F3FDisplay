@@ -36,6 +36,14 @@ import plotly.graph_objects as go
 import plotly.io as plotio
 
 
+class EpaperJustif:
+    none = 0
+    left = 1
+    center = 2
+    right = 3
+    centerdispay = 4
+
+
 class Epaper:
     def __init__(self):
         super().__init__()
@@ -48,38 +56,26 @@ class Epaper:
     def displayWaitingMsg(self, ip, gateway):
         try:
             self.clearImage()
-            stringIp = "IP:" + ip
-            stringGw = "GW:" + gateway
-            stringsizeIp = self.font35.getsize(stringIp)
-            stringsizeGw = self.font35.getsize(stringGw)
-            string0 = 'F3FDISPLAY'
-            stringsize0 = self.font35.getsize(string0)
+            self.displayAddString("IP:" + ip, y=20, justif=EpaperJustif.centerdispay, fontData=self.font35)
+            self.displayAddString("GW:" + gateway, y=60, justif=EpaperJustif.centerdispay, fontData=self.font35)
+            self.displayAddString("F3F Display", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
+                                   fontData=self.font35)
+            self.displayAddString("NOT CONNECTED", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
+                                   fontData=self.font35)
 
-            string1 = 'NOT CONNECTED'
-            stringsize1 = self.font35.getsize(string1)
-
-            self.draw.text((int(self.epd.width / 2 - stringsizeIp[0] / 2), 20), stringIp, font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsizeGw[0] / 2), 60), stringGw, font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]),
-                           string0, font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]),
-                           string1, font=self.font35, fill=0)
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
+
     def displayContestNotRunning(self):
         try:
-            string0 = 'F3FDISPLAY'
-            stringsize0 = self.font35.getsize(string0)
-
-            string1 = 'CONTEST NOT STARTED'
-            stringsize1 = self.font35.getsize(string1)
             self.clearImage()
-            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]),
-                           string0, font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]),
-                           string1, font=self.font35, fill=0)
+            self.displayAddString("F3FDISPLAY", y=self.epd.height / 2 -20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+            self.displayAddString("CONTEST NOT STARTED", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
@@ -93,40 +89,25 @@ class Epaper:
             xoffset = 5
             self.clearImage()
             string = 'ROUND ' + round
-
             string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
-            stringsize = self.font35.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+            yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
+
             for besttime in besttimelist:
                 if 'run' in besttime:
                     string = 'Grp:' + str(besttime['gp']) + ' - ' + besttime['run'].split('\t')[0]
                 else:
                     string = 'Grp:' + str(besttime['gp']) + ' - ' + "No time availables"
-                stringsize = self.font24.getsize(string)
-                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font24)
 
-            # yoffset += int(stringsize[1])
-            string = 'REMAINING PILOTS:'
-            stringsize = self.font35.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+            yoffset = self.displayAddString("REMAINING PILOTS:", y=yoffset, justif=EpaperJustif.centerdispay,
+                                            fontData=self.font35)
             yoffset_title = yoffset
-            yoffsetMax = 0
+            yoffsetMax, stringSizeMax = self.getYMaxInPilotList(pilotlist, self.font24)
             stringsizemax = 0
-            # search yoffset Max
             for pilot in pilotlist:
                 string = str(pilot['bib']) + ':' + pilot['pil']
                 stringsize = self.font24.getsize(string)
-                if stringsize[1] > yoffsetMax:
-                    yoffsetMax = stringsize[1]
-            for pilot in pilotlist:
-                string = str(pilot['bib']) + ':' + pilot['pil']
-                stringsize = self.font24.getsize(string)
-
-                if stringsize[0] > stringsizemax:
-                    stringsizemax = stringsize[0] + 15
 
                 # check if pilot name length is ok in 2 column display
                 if stringsize[0] > (self.epd.width / 2 - 4):
@@ -146,8 +127,8 @@ class Epaper:
                     else:
                         xoffset = self.epd.width + 1
                         yoffset = yoffset_title
-                self.draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-                yoffset += yoffsetMax + 1
+                yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
+                                                fontData=self.font24, yoffset=yoffsetMax)
             self.draw.line([(stringsizemax, yoffset_title), (stringsizemax, yoffset)], fill='black', width=0)
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
@@ -155,16 +136,11 @@ class Epaper:
 
     def displayRanking(self):
         try:
-            string0 = 'F3FDISPLAY Ranking'
-            stringsize0 = self.font35.getsize(string0)
-
-            string1 = 'IN CONSTRUCTION'
-            stringsize1 = self.font35.getsize(string1)
             self.clearImage()
-            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]),
-                           string0, font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]),
-                           string1, font=self.font35, fill=0)
+            self.displayAddString("F3FDISPLAY Ranking", y= self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+            self.displayAddString("IN CONSTRUCTION", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
@@ -177,31 +153,19 @@ class Epaper:
             self.clearImage()
             string = 'ROUND ' + round
             string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
-            stringsize = self.font35.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+            yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
             for besttime in bestimelist:
                 if 'run' in besttime:
-                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + besttime['run'].split('\t')[0]
+                    string = 'Grp ' + str(besttime['gp']) + ' - ' + besttime['run'].split('\t')[0]
                 else:
-                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
-                stringsize = self.font24.getsize(string)
-                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
-
-            # yoffset += int(stringsize[1])
-            string = 'PILOTS Times :'
-            stringsize = self.font35.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+                    string = 'Grp ' + str(besttime['gp']) + ' - ' + "No time availables"
+                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font24)
+            yoffset = self.displayAddString("PILOTS Times :", y=yoffset, justif=EpaperJustif.centerdispay,
+                                            fontData=self.font35)
             yoffset_title = yoffset
-            yoffsetMax = 0
-            # search yoffset Max
-            for pilot in roundtimeslist:
-                string = pilot[0] + '-' + pilot[1] + ' :' + pilot[2]
-                stringsize = self.font24.getsize(string)
-                if stringsize[1] > yoffsetMax:
-                    yoffsetMax = stringsize[1]
+            yoffsetMax = self.getYMaxInRoundList(roundtimeslist, self.font24)
+
             for pilot in roundtimeslist:
                 string = pilot[0] + '-' + pilot[1] + ' :' + pilot[2]
                 stringsize = self.font24.getsize(string)
@@ -220,8 +184,9 @@ class Epaper:
                     else:
                         xoffset = self.epd.width + 1
                         yoffset = yoffset_title
-                self.draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-                yoffset += yoffsetMax + 1
+                yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
+                                                fontData=self.font24, yoffset=yoffsetMax)
+
             self.draw.line([(self.epd.width / 2, yoffset_title), (self.epd.width / 2, yoffset)], fill='black', width=0)
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
@@ -231,25 +196,20 @@ class Epaper:
         try:
             yoffset = 0
             self.clearImage()
-            string = 'WEATHER STATION'
-            stringsize = self.font35.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+            yoffset = self.displayAddString("WEATHER STATION", y=yoffset, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
 
             if len(moy) > 0:
                 string = '{:.0f}'.format(moy[-1]) + ' m/s'
                 if len(dir) > 0:
                     string += ', {:.0f}'.format(dir[-1]) + '°'
-                stringsize = self.font24.getsize(string)
-                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font35)
                 imgPlot = self.displayWeatherGraph(0, yoffset, x, min, moy, max, dir)
                 self.image.paste(imgPlot, (0, yoffset))
             else:
-                string = 'Waiting data'
-                stringsize = self.font24.getsize(string)
-                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+                yoffset = self.displayAddString("Waiting data", y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font35)
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
@@ -328,23 +288,60 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
+    def displayAddString(self, string="", x=0, y=0, justif=EpaperJustif.none, fontData=0, yoffset=0):
+        if fontData == self.font18:
+            stringsize = self.font18.getsize(string)
+        elif fontData == self.font24:
+            stringsize = self.font24.getsize(string)
+        elif fontData == self.font30:
+            stringsize = self.font30.getsize(string)
+        else:
+            stringsize = self.font35.getsize(string)
+        if justif == EpaperJustif.centerdispay:
+            pos = (int(self.epd.width / 2 - stringsize[0] / 2), y)
+        elif justif == EpaperJustif.center:
+            pos = (int(self.epd.width / 2 - stringsize[0] / 2), y)
+        else:
+            pos = (x, y)
+        self.draw.text(pos, string, font=fontData, fill=0)
+        if yoffset == 0:
+            offset = y + stringsize[1] + 1
+        else:
+            offset = y + yoffset + 1
+        return offset
+
+    def getYMaxInRoundList(self, list, font):
+        yoffsetMax = 0
+        # search yoffset Max
+        for pilot in list:
+            string = pilot[0] + '-' + pilot[1] + ' :' + pilot[2]
+            stringsize = font.getsize(string)
+            if stringsize[1] > yoffsetMax:
+                yoffsetMax = stringsize[1]
+        return yoffsetMax
+
+    def getYMaxInPilotList(self, list, font):
+        yoffsetMax = 0
+        stringsizemax = 0
+        # search yoffset Max
+        for pilot in list:
+            string = str(pilot['bib']) + ':' + pilot['pil']
+            stringsize = font.getsize(string)
+            if stringsize[1] > yoffsetMax:
+                yoffsetMax = stringsize[1]
+            if stringsize[0] > stringsizemax - 15:
+                stringsizemax = stringsize[0] + 15
+        return yoffsetMax, stringsizemax
     def clearImage(self):
         self.draw.rectangle([(0, 0), (self.epd.width, self.epd.height)], fill=255)
 
     def close(self):
         try:
             self.clearImage()
-            string0 = 'F3F DISPLAY'
-            stringsize0 = self.font35.getsize(string0)
-
-            string1 = 'BYE BYE'
-            stringsize1 = self.font35.getsize(string1)
-            self.draw.text((int(self.epd.width / 2 - stringsize0[0] / 2), self.epd.height / 2 - stringsize0[1]),
-                           string0,
-                           font=self.font35, fill=0)
-            self.draw.text((int(self.epd.width / 2 - stringsize1[0] / 2), self.epd.height / 2 + stringsize1[1]),
-                           string1,
-                           font=self.font35, fill=0)
+            self.displayAddString("F3F DISPLAY", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+            self.displayAddString("BYE BYE", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
             self.epd.display(self.epd.getbuffer(self.image))
             self.image.close()
         except IOError as e:
@@ -406,51 +403,34 @@ class Epaper75(Epaper):
             string = 'ROUND ' + round
 
             string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
-            stringsize = self.font35.getsize(string)
-            self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+            yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
             for besttime in besttimelist:
                 if 'run' in besttime:
                     string = 'Grp : ' + str(besttime['gp']) + ' - ' + besttime['run'].split('\t')[0]
                 else:
                     string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
-                stringsize = self.font24.getsize(string)
-                self.draw.text((int(self.epd.width / 2 - stringsize[0] / 2), yoffset), string, font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font24)
 
-            yoffsetMax = 0
-            stringsizemax = 0
-            # search yoffset Max
-            for pilot in pilotlist:
-                string = str(pilot['bib']) + ' : ' + pilot['pil']
-                stringsize = self.font24.getsize(string)
-                if stringsize[1] > yoffsetMax:
-                    yoffsetMax = stringsize[1]
-                if stringsize[0] > stringsizemax - 15:
-                    stringsizemax = stringsize[0] + 15
-
+            yoffsetMax, stringsizemax = self.getYMaxInPilotList(pilotlist, self.font24)
             yoffset_title = yoffset
+
             string = 'REMAINING:'
             stringsize = self.font35.getsize(string)
-            self.draw.text((int(stringsizemax / 2 - stringsize[0] / 2), yoffset), string, font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
-            yoffset_pilot = yoffset
+            yoffset = self.displayAddString(string, x=int(stringsizemax / 2 - stringsize[0] / 2), y=yoffset,
+                                            justif=EpaperJustif.none, fontData=self.font35)
 
+            yoffset_pilot = yoffset
             print("num pilotlist : " + str(len(pilotlist)))
             for pilot in pilotlist:
-                string = str(pilot['bib']) + ' : ' + pilot['pil']
-                stringsize = self.font24.getsize(string)
-
-                # check if pilot name length is ok in 2 column display
-                if stringsize[0] > (self.epd.width / 2 - 4):
-                    string = string[:int(len(string) * (self.epd.width / 2 - 4) / stringsize[0]) - 1] + '.'
-
                 # Check end of display height and width
                 if yoffset + yoffsetMax > self.epd.height:
                     break  # display only one column
-                self.draw.text((xoffset, yoffset), string, font=self.font24, fill=0)
-                yoffset += yoffsetMax + 1
-            self.draw.line([(stringsizemax, yoffset_pilot), (stringsizemax, yoffset)], fill='black', width=0)
+
+                string = str(pilot['bib']) + ' : ' + pilot['pil']
+                yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
+                                                fontData=self.font24, yoffset=yoffsetMax)
+            self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
             self.displayWeatherInRemaining(stringsizemax + 5, yoffset_title, weatherx, weathermin, weathermoy,
                                            weathermax, weatherdir)
 
@@ -464,18 +444,18 @@ class Epaper75(Epaper):
             yoffset = ydisplay
             string = 'WEATHER STATION'
             stringsize = self.font35.getsize(string)
-            self.draw.text((int((self.epd.width - xoffset) / 2 - stringsize[0] / 2 + xoffset), yoffset), string,
-                           font=self.font35, fill=0)
-            yoffset += stringsize[1] + 1
+            yoffset = self.displayAddString(string,
+                                            x=int((self.epd.width - xoffset) / 2 - stringsize[0] / 2 + xoffset),
+                                            y=yoffset, justif=EpaperJustif.none, fontData=self.font35)
 
             if len(moy) > 0:
                 string = '{:.0f}'.format(moy[-1]) + ' m/s'
                 if len(dir) > 0:
                     string += ', {:.0f}'.format(dir[-1]) + '°'
                 stringsize = self.font24.getsize(string)
-                self.draw.text((int((self.epd.width - xoffset) / 2 - stringsize[0] / 2 + xoffset), yoffset), string,
-                               font=self.font24, fill=0)
-                yoffset += stringsize[1] + 1
+                yoffset = self.displayAddString(string,
+                                                x=int((self.epd.width - xoffset) / 2 - stringsize[0] / 2 + xoffset),
+                                                y=yoffset, justif=EpaperJustif.none, fontData=self.font24)
                 imgPlot = self.displayWeatherGraph(xoffset, yoffset, x, min, moy, max, dir)
                 self.image.paste(imgPlot, (xoffset, yoffset))
             else:

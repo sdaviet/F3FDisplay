@@ -22,9 +22,9 @@ import socket
 import json
 from PyQt5.QtCore import QThread, pyqtSignal
 from Utils import getnetwork_info
+import ConfigReader
 
 tcpPort = 10000
-F3FChronoServerIp = "192.168.1.251"
 
 class tcpClient_Status():
     Init = 0
@@ -53,9 +53,9 @@ class tcpClient(QThread):
         while not self.isFinished():
             if self.status == tcpClient_Status.Init:
                 try:
-                    gateway = '192.168.0.11' #'localhost'
+                    gateway = ConfigReader.config.conf['server_ip']
                     self.ip, self.gateway = getnetwork_info()
-                    if self.gateway == F3FChronoServerIp:
+                    if self.gateway == ConfigReader.config.conf['F3FChronoServerIp']:
                         gateway = self.gateway
 
                     self.Client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

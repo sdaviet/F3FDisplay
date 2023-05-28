@@ -4,5 +4,7 @@
  "btn_restart_time": 4,
  "weather_timer_s": 30,
  "max_weather_data": 100,
- "display_type": 7.5
+ "display_type": 7.5,
+ "server_ip": "192.168.0.11",
+ "F3FChronoServerIp" : "192.168.1.251"
 }

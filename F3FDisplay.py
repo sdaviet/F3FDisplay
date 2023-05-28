@@ -93,7 +93,7 @@ class f3fdisplay_ctrl:
         if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
             x, min, moy, max, dir = self.weather.getData()
             self.epaper.displayPilot(round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                     self.bestimelist, self.pilotlist, self.pagenumber, x, min, max, moy, dir)
+                                     self.bestimelist, self.pilotlist, x, min, max, moy, dir)
         elif self.status == status.contest_inprogress and self.mode == mode.contest_roundtime:
             self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                          self.bestimelist, self.roundtimeslist)
@@ -128,7 +128,7 @@ class f3fdisplay_ctrl:
                 print("page remaining pilot")
                 x, min, moy, max, dir = self.weather.getData()
                 self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                         self.bestimelist, self.pilotlist, self.pagenumber, x, min, max, moy, dir)
+                                         self.bestimelist, self.pilotlist, x, min, max, moy, dir)
             elif self.mode == mode.contest_weather:
                 print("page weather")
                 x, min, moy, max, dir = self.weather.getData()
@@ -138,8 +138,8 @@ class f3fdisplay_ctrl:
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
                 print("page contest current round time")
-                self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                             self.bestimelist, self.roundtimeslist)
+                self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                             self.bestimelist, self.pilotlist, self.roundtimeslist)
 
     def slot_down_page(self):
         print("slot_down_page")
@@ -157,8 +157,10 @@ class f3fdisplay_ctrl:
             self.epaper.displayWeather(x, min, moy, max, dir)
 
     def incMode(self):
-        self.mode = self.mode+1
-        if self.mode > mode.contest_ranking:
+        #self.mode = self.mode+1
+        if self.mode == mode.contest_pilotlist:
+            self.mode = mode.contest_roundtime
+        else:
             self.mode = mode.contest_pilotlist
 
 

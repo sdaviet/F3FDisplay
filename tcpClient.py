@@ -53,7 +53,7 @@ class tcpClient(QThread):
         while not self.isFinished():
             if self.status == tcpClient_Status.Init:
                 try:
-                    gateway = 'localhost'
+                    gateway = '192.168.0.11' #'localhost'
                     self.ip, self.gateway = getnetwork_info()
                     if self.gateway == F3FChronoServerIp:
                         gateway = self.gateway

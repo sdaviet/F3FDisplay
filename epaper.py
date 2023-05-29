@@ -68,7 +68,7 @@ class Epaper:
             logging.info(e)
 
 
-    def displayContestNotRunning(self):
+    def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermax=None, weathermoy=None, weatherdir=None):
         try:
             self.clearImage()
             self.displayAddString("F3FDISPLAY", y=self.epd.height / 2 -20, justif=EpaperJustif.centerdispay,
@@ -351,8 +351,8 @@ class Epaper:
 class Epaper42(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):
         super().__init__()
-        rpi = is_running_on_pi()
-        if rpi:
+        self.rpi = is_running_on_pi()
+        if self.rpi:
             self.epd = epd4in2.EPD()
             self.gpio = f3fDisplay_gpio(rpi)
             self.gpio.signal_shutdown.connect(slot_shutdown)
@@ -363,19 +363,25 @@ class Epaper42(Epaper):
             self.epd.signal_shutdown.connect(slot_shutdown)
             self.epd.signal_nextpage.connect(slot_page)
             self.epd.signal_downpage.connect(slot_page_down)
+            self.epd.signal_shutdown.connect(self.epd.softwareShutdown)
+            self.epd.softwareRunning()
+
         self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
         self.draw = ImageDraw.Draw(self.image)
         logging.info("init and Clear")
         self.epd.init()
         self.epd.Clear()
 
+    def weather_signalconnect(self):
+        if not self.rpi:
+            return(self.epd.weatherStationIsRunning)
 
 class Epaper75(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):
         super().__init__()
 
-        rpi = is_running_on_pi()
-        if rpi:
+        self.rpi = is_running_on_pi()
+        if self.rpi:
             self.epd = epd7in5_V2.EPD()
             self.gpio = f3fDisplay_gpio(rpi)
             self.gpio.signal_shutdown.connect(slot_shutdown)
@@ -383,14 +389,37 @@ class Epaper75(Epaper):
             self.gpio.signal_downpage.connect(slot_page_down)
         else:
             self.epd = fake_EPD(7.5)
+            self.epd.softwareRunning()
             self.epd.signal_shutdown.connect(slot_shutdown)
             self.epd.signal_nextpage.connect(slot_page)
             self.epd.signal_downpage.connect(slot_page_down)
+
         self.image = Image.new('1', (self.epd.width, self.epd.height), 255)  # 255: clear the frame
         self.draw = ImageDraw.Draw(self.image)
         logging.info("init and Clear")
         self.epd.init()
         self.epd.Clear()
+
+    def weather_signalconnect(self):
+        if not self.rpi:
+            return(self.epd.weatherStationIsRunning)
+
+    def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermoy=None, weathermax=None,
+                                 weatherdir=None):
+        try:
+            yoffset = 0
+            self.clearImage()
+            yoffset = self.displayAddString("F3FDISPLAY", y=yoffset, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+            yoffset = self.displayAddString("CONTEST NOT STARTED", y=yoffset, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+
+            self.displayWeatherInRemaining(5, yoffset+20, weatherx, weathermin, weathermoy,
+                                           weathermax, weatherdir)
+
+            self.epd.display(self.epd.getbuffer(self.image))
+        except IOError as e:
+            logging.info(e)
 
     def displayRemaining_RoundTime(self, round, speed, dir, besttimelist, pilotlist, roundtime):
         try:

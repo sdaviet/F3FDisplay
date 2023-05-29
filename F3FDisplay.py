@@ -64,6 +64,7 @@ class f3fdisplay_ctrl:
             else:
                 self.epaper = Epaper(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
             self.weather = weather()
+            self.weather.weatherNbData_signal.connect(self.epaper.weather_signalconnect())
             self.weather.weather_signal.connect(self.slot_weather)
             self.tcp = tcpClient()
             self.tcp.order_sig.connect(self.setorderdataanddisplaypilot)
@@ -99,7 +100,8 @@ class f3fdisplay_ctrl:
                                          self.bestimelist, self.roundtimeslist)
 
     def contestNotRunning(self):
-        self.epaper.displayContestNotRunning()
+        x, min, moy, max, dir = self.weather.getData()
+        self.epaper.displayContestNotRunning(x, min, moy, max, dir)
         self.status = status.contest_notstarted
         self.mode = mode.contest_None
 
@@ -119,8 +121,9 @@ class f3fdisplay_ctrl:
                 self.epaper.displayWeather(x, min, moy, max, dir)
             else:
                 print("page contest not running")
+                x, min, moy, max, dir = self.weather.getData()
                 self.mode = mode.contest_None
-                self.epaper.displayContestNotRunning()
+                self.epaper.displayContestNotRunning(x, min, moy, max, dir)
 
         if self.status == status.contest_inprogress:
             self.incMode()
@@ -152,10 +155,16 @@ class f3fdisplay_ctrl:
         exit()
 
     def slot_weather(self):
-        if self.mode == mode.contest_weather:
-            x, min, moy, max, dir = self.weather.getData()
-            self.epaper.displayWeather(x, min, moy, max, dir)
+        x, min, moy, max, dir = self.weather.getData()
+        if self.status == status.contest_notstarted:
+            self.epaper.displayContestNotRunning(x, min, moy, max, dir)
 
+        if self.status == status.contest_inprogress:
+            if self.mode == mode.contest_weather:
+                self.epaper.displayWeather(x, min, moy, max, dir)
+            elif self.mode == mode.contest_pilotlist:
+                self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                         self.bestimelist, self.pilotlist, x, min, max, moy, dir)
     def incMode(self):
         #self.mode = self.mode+1
         if self.mode == mode.contest_pilotlist:
@@ -166,6 +175,7 @@ class f3fdisplay_ctrl:
 
 class weather(QTimer):
     weather_signal = pyqtSignal()
+    weatherNbData_signal = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -203,6 +213,8 @@ class weather(QTimer):
             self.list.append(self.data)
         if len(self.list) > self.maxweatherdata:
             del self.list[0]
+
+        self.weatherNbData_signal.emit(self.data[3])
         self.newdata()
         self.weather_signal.emit()
 

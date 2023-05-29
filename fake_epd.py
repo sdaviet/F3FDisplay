@@ -18,6 +18,7 @@ import logging
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt
 
 from PIL.ImageQt import ImageQt
 
@@ -53,10 +54,21 @@ class fake_EPD(QtCore.QObject):
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName("gridLayout")
-        self.verticalLayout = QtWidgets.QVBoxLayout()
-        self.verticalLayout.setSpacing(0)
-        self.verticalLayout.setObjectName("verticalLayout")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
+        self.horizontalLayout.setSpacing(0)
+        self.horizontalLayout.setObjectName("horizontalLayout")
         self.MainWindow.setCentralWidget(self.centralwidget)
+        self.led1 = QtWidgets.QLabel(self.centralwidget)
+        self.led1.setObjectName("led1")
+        self.led1.setAlignment(Qt.AlignCenter)
+        self.led1.setText(self.led1.objectName() + ": Waiting")
+        self.horizontalLayout.addWidget(self.led1)
+        self.led2 = QtWidgets.QLabel(self.centralwidget)
+        self.led2.setObjectName("led2")
+        self.led2.setAlignment(Qt.AlignCenter)
+        self.led2.setText(self.led2.objectName() + ": Waiting")
+        self.horizontalLayout.addWidget(self.led2)
+        self.gridLayout.addLayout(self.horizontalLayout, 0, 0)
         self.btnPage = QtWidgets.QPushButton(self.centralwidget)
         self.btnPage.setObjectName("btn_page")
         self.btnPage.setText("Btn Page")
@@ -69,6 +81,7 @@ class fake_EPD(QtCore.QObject):
         self.btnShutDown.setObjectName("btn_shutdown")
         self.btnShutDown.setText("btn Shutdown")
         self.gridLayout.addWidget(self.btnShutDown)
+
 
         self.lbl = QtWidgets.QLabel(self.centralwidget)
         self.gridLayout.addWidget(self.lbl)
@@ -85,6 +98,18 @@ class fake_EPD(QtCore.QObject):
         self.signal_nextpage.emit()
     def btn_down_clicked(self):
         self.signal_downpage.emit()
+
+    def softwareRunning(self):
+        self.led1.setText(self.led1.objectName() + " : Software Running")
+
+    def softwareShutdown(self):
+        self.led1.setText(self.led1.objectName() + " : Software Shutdown")
+
+    def weatherStationIsRunning(self, nbData):
+        if nbData>0:
+            self.led2.setText(self.led1.objectName() + " : MeteoStation Running")
+        else:
+            self.led2.setText(self.led1.objectName() + " : MeteoStation Waiting data")
 
     def reset(self):
         logging.info("reset")

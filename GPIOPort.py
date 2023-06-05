@@ -46,7 +46,20 @@ class f3fDisplay_gpio(QObject):
 
             self.btn_restart_time = ConfigReader.config.conf['btn_restart_time']
             self.lasttimer = None
+            self.ledSoftRunning = LED (ConfigReader.config.conf['led_soft_running'])
+            self.ledMeteo = LED (ConfigReader.config.conf['led_meteo'])
 
+    def softwareRunning(self):
+        self.ledSoftRunning.blink()
+
+    def softwareShutdown(self):
+        self.ledSoftRunning.off()
+
+    def weatherStationIsRunning(self, nbData):
+        if nbData>0:
+            self.ledMeteo.blink()
+        else:
+            self.ledMeteo.off()
 
     def btnPage_pressed(self):
         if self.__debug:

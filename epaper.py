@@ -384,6 +384,7 @@ class Epaper75(Epaper):
         if self.rpi:
             self.epd = epd7in5_V2.EPD()
             self.gpio = f3fDisplay_gpio(rpi)
+            self.gpio.ledSoftRunning()
             self.gpio.signal_shutdown.connect(slot_shutdown)
             self.gpio.signal_nextpage.connect(slot_page)
             self.gpio.signal_downpage.connect(slot_page_down)
@@ -403,6 +404,8 @@ class Epaper75(Epaper):
     def weather_signalconnect(self):
         if not self.rpi:
             return(self.epd.weatherStationIsRunning)
+        else:
+            return(self.gpio.weatherStationIsRunning)
 
     def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermoy=None, weathermax=None,
                                  weatherdir=None):
@@ -561,6 +564,19 @@ class Epaper75(Epaper):
                 if yoffset + yoffsetMax < self.epd.height:
                     yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
                                                 fontData=self.font24, yoffset=yoffsetMax)
+        except IOError as e:
+            logging.info(e)
+
+    def close(self):
+        try:
+            self.gpio.softwareShutdown()
+            self.clearImage()
+            self.displayAddString("F3F DISPLAY", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+            self.displayAddString("BYE BYE", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
+                                  fontData=self.font35)
+            self.epd.display(self.epd.getbuffer(self.image))
+            self.image.close()
         except IOError as e:
             logging.info(e)
 

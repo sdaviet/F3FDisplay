@@ -42,8 +42,10 @@ str = type('')
 default_config = \
 {
     "btn_page": 13,
-    "btn_down": 14,
+    "btn_down": 4,
     "btn_restart_time": 4,
+    "led_soft_running": 19,
+    "led_meteo": 26,
     "weather_timer_s": 60,
     "max_weather_data": 8,
     "display_type": 4.2

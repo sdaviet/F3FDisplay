@@ -59,7 +59,7 @@ class f3fdisplay_ctrl:
             logging.info("F3FDisplay init")
             if ConfigReader.config.conf['display_type'] == 4.2:
                 self.epaper = Epaper42(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
-            elif ConfigReader.config.conf['display_type'] == 7.5
+            elif ConfigReader.config.conf['display_type'] == 7.5:
                 print("launch Epaper75")
                 self.epaper = Epaper75(self.slot_btn_shutdown, self.slot_btn_page, self.slot_down_page)
             else:

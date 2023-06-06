@@ -384,7 +384,7 @@ class Epaper75(Epaper):
         if self.rpi:
             self.epd = epd7in5_V2.EPD()
             self.gpio = f3fDisplay_gpio(self.rpi)
-            self.gpio.ledSoftRunning()
+            self.gpio.softwareRunning()
             self.gpio.signal_shutdown.connect(slot_shutdown)
             self.gpio.signal_nextpage.connect(slot_page)
             self.gpio.signal_downpage.connect(slot_page_down)

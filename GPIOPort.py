@@ -37,6 +37,8 @@ class f3fDisplay_gpio(QObject):
         self.btnPage_enableEvent = True
         self.btnDown_enableEvent = True
         if rpi:
+            self.ledSoftRunning = LED(ConfigReader.config.conf['led_soft_running'])
+            self.ledMeteo = LED(ConfigReader.config.conf['led_meteo'])
             self.btn_page = Button(ConfigReader.config.conf['btn_page'])
             self.btn_page.when_pressed = self.btnPage_pressed
             self.btn_page.when_released = self.btnPage_released
@@ -46,8 +48,7 @@ class f3fDisplay_gpio(QObject):
 
             self.btn_restart_time = ConfigReader.config.conf['btn_restart_time']
             self.lasttimer = None
-            self.ledSoftRunning = LED (ConfigReader.config.conf['led_soft_running'])
-            self.ledMeteo = LED (ConfigReader.config.conf['led_meteo'])
+
 
     def softwareRunning(self):
         self.ledSoftRunning.blink()
@@ -79,7 +80,7 @@ class f3fDisplay_gpio(QObject):
 
     def btnDown_pressed(self):
         if self.__debug:
-            print("gpio btnPage_pressed")
+            print("gpio btnDown_pressed")
         if self.btnDown_enableEvent:
             self.btnDown_enableEvent = False
             self.lasttimer = perf_counter()

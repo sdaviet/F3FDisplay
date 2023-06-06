@@ -103,7 +103,8 @@ if __name__ == '__main__':
     ConfigReader.config = ConfigReader.Configuration('../../config.json')
     rpi = f3fDisplay_gpio(rpi = is_running_on_pi())
 
-    rpi.signal_btn_next.connect(rpi.event_signal)
+    #rpi.signal_btn_next.connect(rpi.event_signal)
+    rpi.softwareRunning()
     app = QCoreApplication(sys.argv)
     
     sys.exit(app.exec())

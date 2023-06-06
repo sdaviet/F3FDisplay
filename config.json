@@ -1,6 +1,6 @@
 {
- "btn_page": 13,
- "btn_down": 4,
+ "btn_page": 3,
+ "btn_down": 13,
  "btn_restart_time": 4,
  "led_soft_running": 19,
  "led_meteo": 26,

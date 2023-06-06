@@ -354,7 +354,7 @@ class Epaper42(Epaper):
         self.rpi = is_running_on_pi()
         if self.rpi:
             self.epd = epd4in2.EPD()
-            self.gpio = f3fDisplay_gpio(rpi)
+            self.gpio = f3fDisplay_gpio(self.rpi)
             self.gpio.signal_shutdown.connect(slot_shutdown)
             self.gpio.signal_nextpage.connect(slot_page)
             self.gpio.signal_downpage.connect(slot_page_down)
@@ -383,7 +383,7 @@ class Epaper75(Epaper):
         self.rpi = is_running_on_pi()
         if self.rpi:
             self.epd = epd7in5_V2.EPD()
-            self.gpio = f3fDisplay_gpio(rpi)
+            self.gpio = f3fDisplay_gpio(self.rpi)
             self.gpio.ledSoftRunning()
             self.gpio.signal_shutdown.connect(slot_shutdown)
             self.gpio.signal_nextpage.connect(slot_page)

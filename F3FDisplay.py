@@ -250,12 +250,15 @@ class weather(QTimer):
         return 0
 
 if __name__ == '__main__':
+    import os
     if not is_running_on_pi():
         app = QtWidgets.QApplication(sys.argv)
     else:
         app = QCoreApplication(sys.argv)
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
     ConfigReader.init()
-    ConfigReader.config = ConfigReader.Configuration('config.json')
+    ConfigReader.config = ConfigReader.Configuration(dname + '/config.json')
     displayCtrl = f3fdisplay_ctrl()
     sys.exit(app.exec_())
     display.close()

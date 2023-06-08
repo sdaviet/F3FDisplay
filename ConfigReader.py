@@ -66,6 +66,7 @@ class Configuration:
 
     def read(self, config_file):
         try:
+            print(config_file)
             self.conf = json.load(open(config_file,'r'))
             self.configFileName = config_file
         except IOError:

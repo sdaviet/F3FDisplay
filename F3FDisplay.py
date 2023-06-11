@@ -55,6 +55,7 @@ class f3fdisplay_ctrl:
         self.bestimelist = None
         self.pilotlist = None
         self.roundtimeslist = None
+        self.weathertick = 0
         try:
             logging.info("F3FDisplay init")
             if ConfigReader.config.conf['display_type'] == 4.2:
@@ -159,16 +160,20 @@ class f3fdisplay_ctrl:
         exit()
 
     def slot_weather(self):
-        x, min, moy, max, dir = self.weather.getData()
-        if self.status == status.contest_notstarted:
-            self.epaper.displayContestNotRunning(x, min, moy, max, dir)
+        self.weathertick += 1
+        if self.weathertick > 1:
+            x, min, moy, max, dir = self.weather.getData()
+            if self.status == status.contest_notstarted:
+                self.epaper.displayContestNotRunning(x, min, moy, max, dir)
 
-        if self.status == status.contest_inprogress:
-            if self.mode == mode.contest_weather:
-                self.epaper.displayWeather(x, min, moy, max, dir)
-            elif self.mode == mode.contest_pilotlist:
-                self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                         self.bestimelist, self.pilotlist, x, min, max, moy, dir)
+            if self.status == status.contest_inprogress:
+                if self.mode == mode.contest_weather:
+                    self.epaper.displayWeather(x, min, moy, max, dir)
+                elif self.mode == mode.contest_pilotlist:
+                    self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                             self.bestimelist, self.pilotlist, x, min, max, moy, dir)
+            self.weathertick = 0
+
     def incMode(self):
         #self.mode = self.mode+1
         if self.mode == mode.contest_pilotlist:

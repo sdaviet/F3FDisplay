@@ -59,19 +59,19 @@ class Epaper:
             self.displayAddString("IP:" + ip, y=20, justif=EpaperJustif.centerdispay, fontData=self.font35)
             self.displayAddString("GW:" + gateway, y=60, justif=EpaperJustif.centerdispay, fontData=self.font35)
             self.displayAddString("F3F Display", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
-                                   fontData=self.font35)
+                                  fontData=self.font35)
             self.displayAddString("NOT CONNECTED", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
-                                   fontData=self.font35)
+                                  fontData=self.font35)
 
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
-
-    def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermax=None, weathermoy=None, weatherdir=None):
+    def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermax=None, weathermoy=None,
+                                 weatherdir=None):
         try:
             self.clearImage()
-            self.displayAddString("F3FDISPLAY", y=self.epd.height / 2 -20, justif=EpaperJustif.centerdispay,
+            self.displayAddString("F3FDISPLAY", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
             self.displayAddString("CONTEST NOT STARTED", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
@@ -137,7 +137,7 @@ class Epaper:
     def displayRanking(self):
         try:
             self.clearImage()
-            self.displayAddString("F3FDISPLAY Ranking", y= self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
+            self.displayAddString("F3FDISPLAY Ranking", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
             self.displayAddString("IN CONSTRUCTION", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
@@ -197,7 +197,7 @@ class Epaper:
             yoffset = 0
             self.clearImage()
             yoffset = self.displayAddString("WEATHER STATION", y=yoffset, justif=EpaperJustif.centerdispay,
-                                  fontData=self.font35)
+                                            fontData=self.font35)
 
             if len(moy) > 0:
                 string = '{:.0f}'.format(moy[-1]) + ' m/s'
@@ -332,6 +332,7 @@ class Epaper:
             if stringsize[0] > stringsizemax - 15:
                 stringsizemax = stringsize[0] + 15
         return yoffsetMax, stringsizemax
+
     def clearImage(self):
         self.draw.rectangle([(0, 0), (self.epd.width, self.epd.height)], fill=255)
 
@@ -374,7 +375,8 @@ class Epaper42(Epaper):
 
     def weather_signalconnect(self):
         if not self.rpi:
-            return(self.epd.weatherStationIsRunning)
+            return (self.epd.weatherStationIsRunning)
+
 
 class Epaper75(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):
@@ -403,9 +405,9 @@ class Epaper75(Epaper):
 
     def weather_signalconnect(self):
         if not self.rpi:
-            return(self.epd.weatherStationIsRunning)
+            return (self.epd.weatherStationIsRunning)
         else:
-            return(self.gpio.weatherStationIsRunning)
+            return (self.gpio.weatherStationIsRunning)
 
     def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermoy=None, weathermax=None,
                                  weatherdir=None):
@@ -413,11 +415,11 @@ class Epaper75(Epaper):
             yoffset = 0
             self.clearImage()
             yoffset = self.displayAddString("F3FDISPLAY", y=yoffset, justif=EpaperJustif.centerdispay,
-                                  fontData=self.font35)
+                                            fontData=self.font35)
             yoffset = self.displayAddString("CONTEST NOT STARTED", y=yoffset, justif=EpaperJustif.centerdispay,
-                                  fontData=self.font35)
+                                            fontData=self.font35)
 
-            self.displayWeatherInRemaining(5, yoffset+20, weatherx, weathermin, weathermoy,
+            self.displayWeatherInRemaining(5, yoffset + 20, weatherx, weathermin, weathermoy,
                                            weathermax, weatherdir)
 
             self.epd.display(self.epd.getbuffer(self.image))
@@ -462,14 +464,14 @@ class Epaper75(Epaper):
                 string = str(pilot['bib']) + ' : ' + pilot['pil']
                 yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
                                                 fontData=self.font24, yoffset=yoffsetMax)
-            #self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
-            self.draw.line([(stringsizemax + 2, yoffset_pilot), (stringsizemax + 2, self.epd.height)], fill='black', width=0)
+            # self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
+            self.draw.line([(stringsizemax + 2, yoffset_pilot), (stringsizemax + 2, self.epd.height)], fill='black',
+                           width=0)
             self.displayRoundTimeInRemaining(stringsizemax + 25, yoffset_title, roundtime)
 
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
-
 
     def displayPilot(self, round, speed, dir, besttimelist, pilotlist,
                      weatherx=None, weathermin=None, weathermax=None, weathermoy=None, weatherdir=None):
@@ -510,8 +512,9 @@ class Epaper75(Epaper):
                 string = str(pilot['bib']) + ' : ' + pilot['pil']
                 yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
                                                 fontData=self.font24, yoffset=yoffsetMax)
-            #self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
-            self.draw.line([(stringsizemax + 2, yoffset_pilot), (stringsizemax + 2, self.epd.height)], fill='black', width=0)
+            # self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
+            self.draw.line([(stringsizemax + 2, yoffset_pilot), (stringsizemax + 2, self.epd.height)], fill='black',
+                           width=0)
             self.displayWeatherInRemaining(stringsizemax + 5, yoffset_title, weatherx, weathermin, weathermoy,
                                            weathermax, weatherdir)
 
@@ -556,16 +559,17 @@ class Epaper75(Epaper):
                                             fontData=self.font35)
             yoffsetMax = self.getYMaxInRoundList(roundtime, self.font24)
             from operator import itemgetter
-            roundtime_sorted = sorted(roundtime, key = itemgetter(2))
+            roundtime_sorted = sorted(roundtime, key=itemgetter(2))
             for pilot in roundtime_sorted:
                 string = pilot[0] + '-' + pilot[1] + ' : ' + pilot[2] + ' - ' + pilot[3]
                 stringsize = self.font24.getsize(string)
 
-
                 # Check end of display height and width
                 if yoffset + yoffsetMax < self.epd.height:
                     yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
-                                                fontData=self.font24, yoffset=yoffsetMax)
+                                                    fontData=self.font24, yoffset=yoffsetMax)
+                else:
+                    break  # max display length !
         except IOError as e:
             logging.info(e)
 
@@ -581,6 +585,7 @@ class Epaper75(Epaper):
             self.image.close()
         except IOError as e:
             logging.info(e)
+
 
 class EpaperDefault(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):

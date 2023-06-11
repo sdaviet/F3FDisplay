@@ -98,9 +98,10 @@ class f3fdisplay_ctrl:
             x, min, moy, max, dir = self.weather.getData()
             self.epaper.displayPilot(round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                      self.bestimelist, self.pilotlist, x, min, max, moy, dir)
-        elif self.status == status.contest_inprogress and self.mode == mode.contest_roundtime:
-            self.epaper.displayRoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
-                                         self.bestimelist, self.roundtimeslist)
+        elif self.mode == mode.contest_roundtime:
+            print("page contest current round time")
+            self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
+                                         self.bestimelist, self.pilotlist, self.roundtimeslist)
 
     def contestNotRunning(self):
         x, min, moy, max, dir = self.weather.getData()

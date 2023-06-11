@@ -555,7 +555,9 @@ class Epaper75(Epaper):
             yoffset = self.displayAddString("PILOTS Times :", y=yoffset, justif=EpaperJustif.centerdispay,
                                             fontData=self.font35)
             yoffsetMax = self.getYMaxInRoundList(roundtime, self.font24)
-            for pilot in roundtime:
+            from operator import itemgetter
+            roundtime_sorted = sorted(roundtime, key = itemgetter(2))
+            for pilot in roundtime_sorted:
                 string = pilot[0] + '-' + pilot[1] + ' : ' + pilot[2] + ' - ' + pilot[3]
                 stringsize = self.font24.getsize(string)
 

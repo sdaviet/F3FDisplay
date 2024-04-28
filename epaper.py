@@ -376,7 +376,8 @@ class Epaper42(Epaper):
     def weather_signalconnect(self):
         if not self.rpi:
             return (self.epd.weatherStationIsRunning)
-
+        else:
+            return (self.gpio.weatherStationIsRunning)
 
 class Epaper75(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):

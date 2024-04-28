@@ -177,7 +177,7 @@ class f3fdisplay_ctrl:
     def incMode(self):
         #self.mode = self.mode+1
         if self.mode == mode.contest_pilotlist:
-            self.mode = mode.contest_roundtime
+            self.mode = mode.contest_weather
         else:
             self.mode = mode.contest_pilotlist
 

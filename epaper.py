@@ -192,6 +192,7 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
+
     def displayWeather(self, x, min, moy, max, dir):
         try:
             yoffset = 0
@@ -348,6 +349,29 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
+    def displayRoundTimeInRemaining(self, xdisplay, ydisplay, roundtime):
+        try:
+            yoffset = ydisplay
+            xoffset = xdisplay
+            yoffset = self.displayAddString("PILOTS Times :", y=yoffset, justif=EpaperJustif.centerdispay,
+                                            fontData=self.font35)
+            yoffsetMax = self.getYMaxInRoundList(roundtime, self.font24)
+            from operator import itemgetter
+            roundtime_sorted = sorted(roundtime, key=itemgetter(2))
+            for pilot in roundtime_sorted:
+                string = pilot[0] + '-' + pilot[1] + ' : ' + pilot[2] + ' - ' + pilot[3]
+                stringsize = self.font24.getsize(string)
+
+                # Check end of display height and width
+                if yoffset + yoffsetMax < self.epd.height:
+                    yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
+                                                    fontData=self.font24, yoffset=yoffsetMax)
+                else:
+                    break  # max display length !
+        except IOError as e:
+            logging.info(e)
+
+
 
 class Epaper42(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):
@@ -372,6 +396,53 @@ class Epaper42(Epaper):
         logging.info("init and Clear")
         self.epd.init()
         self.epd.Clear()
+
+    def displayRemaining_RoundTime(self, round, speed, dir, besttimelist, pilotlist, roundtime):
+        try:
+
+            column = 0
+            yoffset = 0
+            xoffset = 5
+            self.clearImage()
+            string = 'ROUND ' + round
+
+            string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
+            yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
+            for besttime in besttimelist:
+                if 'run' in besttime:
+                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + besttime['run'].split('\t')[0]
+                else:
+                    string = 'Grp : ' + str(besttime['gp']) + ' - ' + "No time availables"
+                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font24)
+
+            yoffsetMax, stringsizemax = self.getYMaxInPilotList(pilotlist, self.font24)
+            stringsizemax += 20
+            yoffset_title = yoffset
+
+            string = 'REMAINING:'
+            stringsize = self.font35.getsize(string)
+            yoffset = self.displayAddString(string, x=int(stringsizemax / 2 - stringsize[0] / 2), y=yoffset,
+                                            justif=EpaperJustif.none, fontData=self.font35)
+
+            yoffset_pilot = yoffset
+            print("num pilotlist : " + str(len(pilotlist)))
+            for pilot in pilotlist:
+                # Check end of display height and width
+                if yoffset + yoffsetMax > self.epd.height:
+                    break  # display only one column
+
+                string = str(pilot['bib']) + ' : ' + pilot['pil']
+                yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
+                                                fontData=self.font24, yoffset=yoffsetMax)
+            # self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
+            self.draw.line([(stringsizemax + 2, yoffset_pilot), (stringsizemax + 2, self.epd.height)], fill='black',
+                           width=0)
+            self.displayRoundTimeInRemaining(stringsizemax + 25, yoffset_title, roundtime)
+
+            self.epd.display(self.epd.getbuffer(self.image))
+        except IOError as e:
+            logging.info(e)
 
     def weather_signalconnect(self):
         if not self.rpi:
@@ -552,27 +623,6 @@ class Epaper75(Epaper):
         except IOError as e:
             logging.info(e)
 
-    def displayRoundTimeInRemaining(self, xdisplay, ydisplay, roundtime):
-        try:
-            yoffset = ydisplay
-            xoffset = xdisplay
-            yoffset = self.displayAddString("PILOTS Times :", y=yoffset, justif=EpaperJustif.centerdispay,
-                                            fontData=self.font35)
-            yoffsetMax = self.getYMaxInRoundList(roundtime, self.font24)
-            from operator import itemgetter
-            roundtime_sorted = sorted(roundtime, key=itemgetter(2))
-            for pilot in roundtime_sorted:
-                string = pilot[0] + '-' + pilot[1] + ' : ' + pilot[2] + ' - ' + pilot[3]
-                stringsize = self.font24.getsize(string)
-
-                # Check end of display height and width
-                if yoffset + yoffsetMax < self.epd.height:
-                    yoffset = self.displayAddString(string, x=xoffset, y=yoffset, justif=EpaperJustif.none,
-                                                    fontData=self.font24, yoffset=yoffsetMax)
-                else:
-                    break  # max display length !
-        except IOError as e:
-            logging.info(e)
 
     def close(self):
         try:

@@ -25,10 +25,8 @@ from Utils import is_running_on_pi
 import ConfigReader
 
 if is_running_on_pi():
-    if ConfigReader.config.conf['display_version'] == 1:
-        from lib.waveshare_epd import epd4in2
-    else:
-        from lib.waveshare_epd import epd4in2b_V2
+    from lib.waveshare_epd import epd4in2
+    from lib.waveshare_epd import epd4in2b_V2
     from lib.waveshare_epd import epd7in5_V2
     from GPIOPort import f3fDisplay_gpio
 else:
@@ -381,7 +379,10 @@ class Epaper42(Epaper):
         super().__init__()
         self.rpi = is_running_on_pi()
         if self.rpi:
-            self.epd = epd4in2.EPD()
+            if ConfigReader.Config["dislay_version"] == 1:
+                self.epd = epd4in2.EPD()
+            elif ConfigReader.Config["dislay_version"] == 2:
+                self.epd = epd4in2b_V2.EPD()
             self.gpio = f3fDisplay_gpio(self.rpi)
             self.gpio.signal_shutdown.connect(slot_shutdown)
             self.gpio.signal_nextpage.connect(slot_page)

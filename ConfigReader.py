@@ -48,7 +48,8 @@ default_config = \
     "led_meteo": 26,
     "weather_timer_s": 60,
     "max_weather_data": 8,
-    "display_type": 4.2
+    "display_type": 4.2,
+    "display_version": 1
 }
 
 def init():

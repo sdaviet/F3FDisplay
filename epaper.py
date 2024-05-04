@@ -379,9 +379,9 @@ class Epaper42(Epaper):
         super().__init__()
         self.rpi = is_running_on_pi()
         if self.rpi:
-            if ConfigReader.Config["dislay_version"] == 1:
+            if ConfigReader.config["dislay_version"] == 1:
                 self.epd = epd4in2.EPD()
-            elif ConfigReader.Config["dislay_version"] == 2:
+            elif ConfigReader.config["dislay_version"] == 2:
                 self.epd = epd4in2b_V2.EPD()
             self.gpio = f3fDisplay_gpio(self.rpi)
             self.gpio.signal_shutdown.connect(slot_shutdown)

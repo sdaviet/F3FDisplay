@@ -22,9 +22,14 @@ import logging
 import json
 import io
 from Utils import is_running_on_pi
+import ConfigReader
 
 if is_running_on_pi():
-    from lib.waveshare_epd import epd4in2, epd7in5_V2
+    if ConfigReader.config.conf['display_version'] == 1:
+        from lib.waveshare_epd import epd4in2
+    else:
+        from lib.waveshare_epd import epd4in2b_V2
+    from lib.waveshare_epd import epd7in5_V2
     from GPIOPort import f3fDisplay_gpio
 else:
     from fake_epd import fake_EPD
@@ -191,7 +196,6 @@ class Epaper:
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
-
 
     def displayWeather(self, x, min, moy, max, dir):
         try:
@@ -372,7 +376,6 @@ class Epaper:
             logging.info(e)
 
 
-
 class Epaper42(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):
         super().__init__()
@@ -449,6 +452,7 @@ class Epaper42(Epaper):
             return (self.epd.weatherStationIsRunning)
         else:
             return (self.gpio.weatherStationIsRunning)
+
 
 class Epaper75(Epaper):
     def __init__(self, slot_shutdown, slot_page, slot_page_down):
@@ -622,7 +626,6 @@ class Epaper75(Epaper):
                 yoffset += stringsize[1] + 1
         except IOError as e:
             logging.info(e)
-
 
     def close(self):
         try:

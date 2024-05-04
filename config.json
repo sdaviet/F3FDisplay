@@ -7,6 +7,7 @@
  "weather_timer_s": 30,
  "max_weather_data": 100,
  "display_type": 4.2,
+ "display_version": 1,
  "server_ip": "192.168.0.250",
  "F3FChronoServerIp" : "192.168.1.251"
 }

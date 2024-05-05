@@ -65,6 +65,7 @@ class tcpClient(QThread):
                     del (self.client)
                     self.client = None
                     self.sleep(5)
+                    self.notConnected_sig.emit()
                 else:
                     if self.__debug:
                         print(f'Connection...')

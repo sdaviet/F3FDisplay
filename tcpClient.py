@@ -43,6 +43,7 @@ class tcpClient(QThread):
         super().__init__()
         self.__debug = True
         self.ip = None
+        self.ipold = None
         self.gateway = None
         self.port = tcpPort
         self.status = tcpClient_Status.Init
@@ -65,7 +66,9 @@ class tcpClient(QThread):
                     del (self.client)
                     self.client = None
                     self.sleep(5)
-                    self.notConnected_sig.emit()
+                    if self.ip != self.ipold:
+                        self.notConnected_sig.emit()
+                        self.ipold = self.ip
                 else:
                     if self.__debug:
                         print(f'Connection...')

@@ -279,6 +279,22 @@ class Epaper:
             showlegend=False,
             name='Fair',
         ))
+        #processing moy curves for each points
+        moycurves = []
+        moycurves.append(0)
+        for i in moy:
+            moycurves[0] = moycurves[0] + i
+        moycurves[0] = moycurves[0] / len(moy)
+        for i in range(1, len(moy)):
+            moycurves.append(moycurves[0])
+        fig.add_trace(go.Scatter(
+            x=x, y=moycurves,
+            mode="lines",
+            line_color='rgb(0,0,0)',
+            showlegend=False,
+            name='Fair',
+        ))
+
         buf = io.BytesIO()
         plotio.write_image(fig, buf, 'png', scale=1)
         buf.seek(0)

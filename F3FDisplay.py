@@ -28,6 +28,7 @@ from tcpClient import tcpClient
 from UDPReceive import udpreceive
 from Utils import getnetwork_info
 import ConfigReader
+from filewriter import filewriter
 
 
 class status:
@@ -77,7 +78,7 @@ class f3fdisplay_ctrl:
             self.udp = udpreceive(4445)
             self.udp.winddir_signal.connect(self.weather.slot_winddir)
             self.udp.windspeed_signal.connect(self.weather.slot_windspeed)
-
+            self.file = filewriter()
             self.displayWaitingMsg()
 
         except IOError as e:
@@ -155,6 +156,7 @@ class f3fdisplay_ctrl:
     def slot_btn_shutdown(self):
         print("slot shuntdown")
         self.epaper.close()
+        self.file.close()
         if is_running_on_pi():
             os.system("sudo shutdown now")
         exit()
@@ -172,6 +174,8 @@ class f3fdisplay_ctrl:
                 elif self.mode == mode.contest_pilotlist:
                     self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                              self.bestimelist, self.pilotlist, x, min, max, moy, dir)
+
+            self.file.write_weather(min[-1], moy[-1], max[-1], dir[-1])
             self.weathertick = 0
 
     def incMode(self):

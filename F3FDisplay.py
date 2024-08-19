@@ -88,10 +88,10 @@ class f3fdisplay_ctrl:
             logging.info("ctrl + c:")
 
     def setorderdataanddisplaypilot(self, round, besttimelist, pilotlist, roundtimeslist):
-        if self.status != status.contest_inprogress:
+        if self.mode is not mode.contest_weather:
             self.mode = mode.contest_pilotlist
-            self.status = status.contest_inprogress
 
+        self.status = status.contest_inprogress
         self.round = round
         self.bestimelist = besttimelist
         self.pilotlist = pilotlist
@@ -106,10 +106,11 @@ class f3fdisplay_ctrl:
                                          self.bestimelist, self.pilotlist, self.roundtimeslist)
 
     def contestNotRunning(self):
-        x, min, moy, max, dir = self.weather.getData()
-        self.epaper.displayContestNotRunning(x, min, moy, max, dir)
         self.status = status.contest_notstarted
-        self.mode = mode.contest_None
+        if self.mode is not mode.contest_weather:
+            x, min, moy, max, dir = self.weather.getData()
+            self.epaper.displayContestNotRunning(x, min, moy, max, dir)
+            self.mode = mode.contest_None
 
     def displayWaitingMsg(self):
         ip, gw = getnetwork_info()
@@ -175,7 +176,8 @@ class f3fdisplay_ctrl:
                     self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                              self.bestimelist, self.pilotlist, x, min, max, moy, dir)
 
-            self.file.write_weather(min[-1], moy[-1], max[-1], dir[-1])
+            if len(min)>0:
+                self.file.write_weather(min[-1], moy[-1], max[-1], dir[-1])
             self.weathertick = 0
 
     def incMode(self):

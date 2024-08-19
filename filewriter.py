@@ -40,10 +40,13 @@ class filewriter():
             self.file.write("time;min; moy; max; dir;\n")
 
     def write_weather(self, min, moy, max, dir):
-        self.file.write(str(datetime.datetime.now().time())+';{:.2f};{:.2f};{:.2f};{:.2f};\n'.format(
-            min, moy, max, dir))
-        self.file.flush()
-        os.fsync(self.file.fileno())
+        try:
+            self.file.write(str(datetime.datetime.now().time())+';{:.2f};{:.2f};{:.2f};{:.2f};\n'.format(
+                min, moy, max, dir))
+            self.file.flush()
+            os.fsync(self.file.fileno())
+        except (IOError, OSError):
+            print("error file writing")
 
     def close(self):
         self.file.close()

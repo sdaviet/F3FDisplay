@@ -133,7 +133,10 @@ class tcpClient(QThread):
                 if self.__debug:
                     print('datasize:' + str(len(orderstring)))
                     print(orderstring)
-                orderjson = json.loads(orderstring)
+                try:
+                    orderjson = json.loads(orderstring)
+                except json.JSONDecodeError as e:
+                    print("invalid JSON syntax:",e)
                 self.order_sig.emit(orderjson['round'],
                                     orderjson['best'],
                                     orderjson['remain'],

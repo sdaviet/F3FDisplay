@@ -129,15 +129,23 @@ class tcpClient(QThread):
                 else:
                     self.contestNotRunning_sig.emit()
             elif m[0] == "ContestData":
-                orderstring = data.decode('utf-8')[len(m[0]) + 1:]
+                #search new ContestData in the list...
+                index=len(m)
+                if m.count("ContestData")>1:
+                    index = m.index ("ContestData", 1, -1)
+
+
+                #orderstring = data.decode('utf-8')[len(m[0]) + 1:]
+                orderstring = ' '.join(m[1:index])
                 if self.__debug:
                     print('datasize:' + str(len(orderstring)))
                     print(orderstring)
                 try:
                     orderjson = json.loads(orderstring)
+                    self.order_sig.emit(orderjson['round'],
+                                        orderjson['best'],
+                                        orderjson['remain'],
+                                        orderjson['roundtime'])
                 except json.JSONDecodeError as e:
                     print("invalid JSON syntax:",e)
-                self.order_sig.emit(orderjson['round'],
-                                    orderjson['best'],
-                                    orderjson['remain'],
-                                    orderjson['roundtime'])
+

@@ -166,15 +166,15 @@ class f3fdisplay_ctrl:
         self.weathertick += 1
         if self.weathertick > 1:
             x, min, moy, max, dir = self.weather.getData()
-            if self.status == status.contest_notstarted:
-                self.epaper.displayContestNotRunning(x, min, moy, max, dir)
-
-            if self.status == status.contest_inprogress:
-                if self.mode == mode.contest_weather:
-                    self.epaper.displayWeather(x, min, moy, max, dir)
-                elif self.mode == mode.contest_pilotlist:
+            if self.mode is not mode.contest_weather:
+                if self.status == status.contest_notstarted:
+                    self.epaper.displayContestNotRunning(x, min, moy, max, dir)
+                if self.status == status.contest_inprogress:
+                    #elif self.mode == mode.contest_pilotlist:
                     self.epaper.displayPilot(self.round, self.weather.getLastSpeedMoy(), self.weather.getLastDirMoy(),
                                              self.bestimelist, self.pilotlist, x, min, max, moy, dir)
+            else:
+                self.epaper.displayWeather(x, min, moy, max, dir)
 
             if len(min)>0:
                 self.file.write_weather(min[-1], moy[-1], max[-1], dir[-1])

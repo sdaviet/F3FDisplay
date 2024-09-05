@@ -5,6 +5,7 @@
  "led_soft_running": 19,
  "led_meteo": 26,
  "weather_timer_s": 30,
+ "weather_log": true,
  "max_weather_data": 100,
  "display_type": 4.2,
  "display_version": 1,

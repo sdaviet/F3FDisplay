@@ -16,10 +16,12 @@
 #
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+
 import sys
 import os
 import logging
 import collections
+from argparse import ArgumentParser
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QCoreApplication, QTimer, pyqtSignal
 from Utils import is_running_on_pi
@@ -120,7 +122,7 @@ class f3fdisplay_ctrl:
                 print("page weather")
                 self.mode = mode.contest_weather
                 self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                               self.weather.createWeatherGraph(self.epaper.epd.width, self.epaper.epd.height-73))
+                               self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
             else:
                 print("page contest not running")
 
@@ -136,7 +138,7 @@ class f3fdisplay_ctrl:
             elif self.mode == mode.contest_weather:
                 print("page weather")
                 self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                               self.weather.createWeatherGraph(self.epaper.epd.width, self.epaper.epd.height-73))
+                               self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
             elif self.mode == mode.contest_ranking:
                 print("page contest ranking")
                 self.epaper.displayRanking()
@@ -169,7 +171,7 @@ class f3fdisplay_ctrl:
                                              self.bestimelist, self.pilotlist, None)
             else:
                 self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                               self.weather.createWeatherGraph(self.epaper.epd.width, self.epaper.epd.height-73))
+                               self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
 
             self.weather.weathertofile()
             self.weathertick = 0
@@ -182,16 +184,37 @@ class f3fdisplay_ctrl:
             self.mode = mode.contest_pilotlist
 
 
+class weather_only():
+    def __init__(self):
+        super().__init__()
+        logging.basicConfig(level=logging.INFO)
+        self.width = ConfigReader.config.conf['weatherBmpWidht']
+        self.height = ConfigReader.config.conf['weatherBmpHeight']
+        self.weather = weather(ConfigReader.config.conf['weather_log'])
+        self.weather.weather_signal.connect(self.slot_weather)
+
+    def slot_weather(self):
+        self.weather.createGraph(self.width, self.height, asFile=True)
+
 if __name__ == '__main__':
+    parser = ArgumentParser(prog='chrono')
+    parser.add_argument('--weather-only', action="store_true")
+    args = parser.parse_args()
+
     import os
 
-    if not is_running_on_pi():
-        app = QtWidgets.QApplication(sys.argv)
-    else:
-        app = QCoreApplication(sys.argv)
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     ConfigReader.init()
     ConfigReader.config = ConfigReader.Configuration(dname + '/config.json')
-    displayCtrl = f3fdisplay_ctrl()
+
+    if args.weather_only:
+        app = QCoreApplication(sys.argv)
+        weatherCtrl = weather_only()
+    else:
+        if not is_running_on_pi():
+            app = QtWidgets.QApplication(sys.argv)
+        else:
+            app = QCoreApplication(sys.argv)
+        displayCtrl = f3fdisplay_ctrl()
     sys.exit(app.exec_())

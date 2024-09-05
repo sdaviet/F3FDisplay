@@ -28,13 +28,13 @@ from filewriter import filewriter
 from UDPReceive import udpreceive
 
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
-
+datadir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
 class weather(QTimer):
     weather_signal = pyqtSignal()
     weatherNbData_signal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, log=False):
         super().__init__()
         self.timerinterval = ConfigReader.config.conf['weather_timer_s']
         self.maxweatherdata = ConfigReader.config.conf['max_weather_data']
@@ -43,7 +43,7 @@ class weather(QTimer):
         self.udp.winddir_signal.connect(self.slot_winddir)
         self.udp.windspeed_signal.connect(self.slot_windspeed)
         self.file = None
-        if (ConfigReader.config.conf['weather_log'] == True):
+        if log:
             self.file = filewriter()
 
         self.newdata()
@@ -112,7 +112,7 @@ class weather(QTimer):
                 return self.list[-1][4] / self.list[-1][5]
         return None
 
-    def createWeatherGraph(self, width=160, height=160):
+    def createGraph(self, width=160, height=160, asFile=False):
         x, min, moy, max, dir = self.getData()
         if len(min) <= 0:
             return (None)
@@ -194,10 +194,15 @@ class weather(QTimer):
             name='Fair',
         ))
 
-        buf = io.BytesIO()
-        plotio.write_image(fig, buf, 'png', scale=1)
-        buf.seek(0)
-        return Image.open(buf)
+        if asFile==False:
+            buf = io.BytesIO()
+            plotio.write_image(fig, buf, 'png', scale=1)
+            buf.seek(0)
+            return Image.open(buf)
+        else:
+            filename = os.path.join(datadir, "weatherGraph.png")
+            plotio.write_image(fig, filename, 'png', scale=1)
+            return filename
 
     def weathertofile(self):
         x, min, moy, max, dir = self.getData()

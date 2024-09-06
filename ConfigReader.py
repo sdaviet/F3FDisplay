@@ -49,7 +49,10 @@ default_config = \
     "weather_timer_s": 60,
     "max_weather_data": 8,
     "display_type": 4.2,
-    "display_version": 1
+    "display_version": 1,
+    "weather_log": True,
+     "weatherBmpWidht" : 200,
+     "weatherBmpHeight" : 200
 }
 
 def init():

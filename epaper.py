@@ -20,7 +20,7 @@ import sys
 import os
 import logging
 import json
-import io
+
 from Utils import is_running_on_pi
 import ConfigReader
 
@@ -35,8 +35,7 @@ else:
 from PIL import Image, ImageDraw, ImageFont, ImageQt
 
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
-import plotly.graph_objects as go
-import plotly.io as plotio
+
 
 
 class EpaperJustif:
@@ -70,21 +69,27 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayContestNotRunning(self, weatherx=None, weathermin=None, weathermax=None, weathermoy=None,
-                                 weatherdir=None):
+    def displayContestNotRunning(self, speed=None, dir=None):
         try:
             self.clearImage()
-            self.displayAddString("F3FDISPLAY", y=self.epd.height / 2 - 20, justif=EpaperJustif.centerdispay,
+            yoffset = 0
+            xoffset = 5
+            yoffset = self.displayAddString("F3FDISPLAY", y=yoffset, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
-            self.displayAddString("CONTEST NOT STARTED", y=self.epd.height / 2 + 20, justif=EpaperJustif.centerdispay,
+            yoffset = self.displayAddString("CONTEST NOT STARTED", y=yoffset, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
+            if speed is not None:
+                string = '{:.0f}'.format(speed) + ' m/s'
+                if dir is not None:
+                    string += ', {:.0f}'.format(dir) + '°'
+                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+                                                fontData=self.font35)
 
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
-    def displayPilot(self, round, speed, dir, besttimelist, pilotlist,
-                     weatherx=None, weathermin=None, weathermax=None, weathermoy=None, weatherdir=None):
+    def displayPilot(self, round, speed, dir, besttimelist, pilotlist, weathergraphbuff=None):
         try:
 
             column = 0
@@ -92,7 +97,10 @@ class Epaper:
             xoffset = 5
             self.clearImage()
             string = 'ROUND ' + round
-            string += ' - ' + '{:.0f}'.format(speed) + 'm/s, ' + '{:.0f}'.format(dir) + '°'
+            if speed is not None :
+                string += ' - ' + '{:.0f}'.format(speed) + 'm/s, '
+            if dir is not None:
+                string += '{:.0f}'.format(dir) + '°'
             yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
 
             for besttime in besttimelist:
@@ -195,111 +203,29 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayWeather(self, x, min, moy, max, dir):
+    def displayWeather(self, speed, dir, imgPlot):
         try:
             yoffset = 0
             self.clearImage()
             yoffset = self.displayAddString("WEATHER STATION", y=yoffset, justif=EpaperJustif.centerdispay,
                                             fontData=self.font35)
 
-            if len(moy) > 0:
-                string = '{:.0f}'.format(moy[-1]) + ' m/s'
-                if len(dir) > 0:
-                    string += ', {:.0f}'.format(dir[-1]) + '°'
+            if speed is not None:
+                string = '{:.0f}'.format(speed) + ' m/s'
+                if dir is not None:
+                    string += ', {:.0f}'.format(dir) + '°'
                 yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
                                                 fontData=self.font35)
-                imgPlot = self.displayWeatherGraph(0, yoffset, x, min, moy, max, dir)
-                self.image.paste(imgPlot, (0, yoffset))
+                #imgPlot = self.displayWeatherGraph(0, yoffset, x, min, moy, max, dir)
+                if imgPlot is not None:
+                    self.image.paste(imgPlot, (0, yoffset))
+
             else:
                 yoffset = self.displayAddString("Waiting data", y=yoffset, justif=EpaperJustif.centerdispay,
                                                 fontData=self.font35)
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
-
-    def displayWeatherGraph(self, xoffset, yoffset, x, min, moy, max, dir):
-        fig = go.Figure()
-        fig.update_layout(
-            autosize=False,
-            width=self.epd.width - xoffset,
-            height=self.epd.height - yoffset,
-            margin=dict(
-                l=2,
-                r=10,
-                b=2,
-                t=10,
-                pad=4
-            ),
-            paper_bgcolor="white",
-            plot_bgcolor="white",
-            xaxis=dict(
-                showline=True,
-                showgrid=True,
-                showticklabels=True,
-                linecolor='rgb(0, 0, 0)',
-                linewidth=2,
-                #ticklabelposition="inside",
-                ticks='inside',
-                tickfont=dict(
-                    family='Arial Black',
-                    size=16,
-                    color='rgb(0, 0, 0)',
-                ),
-            ),
-            yaxis=dict(
-                showgrid=True,
-                zeroline=False,
-                showline=True,
-                showticklabels=True,
-                ticklabelposition="inside bottom",
-                linecolor='rgb(0, 0, 0)',
-                linewidth=2,
-                ticks='',
-                tickfont=dict(
-                    family='Arial Black',
-                    size=16,
-                    color='rgb(0, 0, 0)',
-                ),
-                autorange=False,
-                range=[0, 30.5],
-                gridcolor="grey",
-            ),
-        )
-        fig.add_trace(go.Scatter(
-            x=x + x[::-1],
-            y=max + min[::-1],
-            fill='toself',
-            fillcolor='rgba(0,0,0,0.3)',
-            line_color='rgba(0,0,0,0)',
-            showlegend=False,
-            name='Fair',
-        ))
-        fig.add_trace(go.Scatter(
-            x=x, y=moy,
-            line_color='rgb(0,0,0)',
-            showlegend=False,
-            name='Fair',
-        ))
-        #processing moy curves for each points
-        moycurves = []
-        moycurves.append(0)
-        for i in moy:
-            moycurves[0] = moycurves[0] + i
-        moycurves[0] = moycurves[0] / len(moy)
-        for i in range(1, len(moy)):
-            moycurves.append(moycurves[0])
-        fig.add_trace(go.Scatter(
-            x=x, y=moycurves,
-            mode="lines",
-            line_color='rgb(0,0,0)',
-            showlegend=False,
-            name='Fair',
-        ))
-
-        buf = io.BytesIO()
-        plotio.write_image(fig, buf, 'png', scale=1)
-        buf.seek(0)
-        return Image.open(buf)
 
     def sleep(self):
         try:
@@ -567,8 +493,7 @@ class Epaper75(Epaper):
         except IOError as e:
             logging.info(e)
 
-    def displayPilot(self, round, speed, dir, besttimelist, pilotlist,
-                     weatherx=None, weathermin=None, weathermax=None, weathermoy=None, weatherdir=None):
+    def displayPilot(self, round, speed, dir, besttimelist, pilotlist, weathergraphbuff=None):
         try:
 
             column = 0
@@ -609,8 +534,8 @@ class Epaper75(Epaper):
             # self.draw.line([(stringsizemax+2, yoffset_pilot), (stringsizemax+2, yoffset)], fill='black', width=0)
             self.draw.line([(stringsizemax + 2, yoffset_pilot), (stringsizemax + 2, self.epd.height)], fill='black',
                            width=0)
-            self.displayWeatherInRemaining(stringsizemax + 5, yoffset_title, weatherx, weathermin, weathermoy,
-                                           weathermax, weatherdir)
+            #self.displayWeatherInRemaining(stringsizemax + 5, yoffset_title, weatherx, weathermin, weathermoy,
+            #                               weathermax, weatherdir)
 
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:

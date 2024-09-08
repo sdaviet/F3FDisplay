@@ -95,7 +95,7 @@ class f3fdisplay_ctrl:
         self.roundtimeslist = roundtimeslist
         if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
             self.epaper.displayPilot(self.round, self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                     self.bestimelist, self.pilotlist, None)
+                                     self.weather.getMoySpeed(), self.bestimelist, self.pilotlist, None)
         elif self.mode == mode.contest_roundtime:
             print("page contest current round time")
             '''self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeedMoy(),
@@ -106,7 +106,8 @@ class f3fdisplay_ctrl:
     def contestNotRunning(self):
         self.status = status.contest_notstarted
         if self.mode is not mode.contest_weather:
-            self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir())
+            self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir(),
+                                                 self.weather.getMoySpeed())
             self.mode = mode.contest_None
 
     def displayWaitingMsg(self):
@@ -122,32 +123,35 @@ class f3fdisplay_ctrl:
                 print("page weather")
                 self.mode = mode.contest_weather
                 self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
+                               self.weather.getMoySpeed(),
                                self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
             else:
                 print("page contest not running")
 
                 self.mode = mode.contest_None
-                self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir())
+                self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir(),
+                                                     self.weather.getMoySpeed())
         if self.status == status.contest_inprogress:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
                 print("page remaining pilot")
 
                 self.epaper.displayPilot(self.round, self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                         self.bestimelist, self.pilotlist, None)
+                                         self.weather.getMoySpeed(), self.bestimelist, self.pilotlist, None)
             elif self.mode == mode.contest_weather:
                 print("page weather")
                 self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
+                               self.weather.getMoySpeed(),
                                self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
             elif self.mode == mode.contest_ranking:
                 print("page contest ranking")
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
                 print("page contest current round time")
-                self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeed(),
+                '''self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeed(),
                                                        self.weather.getLastDir(),
                                                        self.bestimelist, self.pilotlist, self.roundtimeslist)
-
+                '''
     def slot_down_page(self):
         print("slot_down_page")
 
@@ -164,13 +168,16 @@ class f3fdisplay_ctrl:
         if self.weathertick > 1:
             if self.mode is not mode.contest_weather:
                 if self.status == status.contest_notstarted:
-                    self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir())
+                    self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir(),
+                                                         self.weather.getMoySpeed())
                 if self.status == status.contest_inprogress:
                     #elif self.mode == mode.contest_pilotlist:
                     self.epaper.displayPilot(self.round, self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                             self.bestimelist, self.pilotlist, None)
+                                             self.weather.getMoySpeed(), self.bestimelist, self.pilotlist,
+                                             None)
             else:
                 self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
+                               self.weather.getMoySpeed(),
                                self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
 
             self.weather.weathertofile()

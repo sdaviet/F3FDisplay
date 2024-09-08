@@ -106,6 +106,16 @@ class weather(QTimer):
                 return self.list[-1][1] / self.list[-1][2]
         return None
 
+    def getMoySpeed(self):
+        moy = 0
+        count = 0
+        if len(self.list) > 0:
+            for i in self.list:
+                moy += i[1] / i[2]
+                count += 1
+            moy = moy / count
+        return moy
+
     def getLastDir(self):
         if len(self.list) > 0:
             if self.list[-1][5] > 0:

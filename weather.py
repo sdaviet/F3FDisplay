@@ -122,22 +122,32 @@ class weather(QTimer):
                 return self.list[-1][4] / self.list[-1][5]
         return None
 
+    def createString(self):
+        string=None
+        speed = self.getLastSpeed()
+        moyspeed = self.getMoySpeed()
+        dir = self.getLastDir()
+        if speed is not None:
+            string = 'A:{:.0f}'.format(speed) + ',M:{:.0f}'.format(moyspeed) + 'm/s'
+            if dir is not None:
+                string += ',{:.0f}'.format(dir) + '°'
+        return string
+
     def createGraph(self, width=160, height=160, asFile=False):
         x, min, moy, max, dir = self.getData()
         if len(min) <= 0:
             return (None)
+        wstring = self.createString()
+        if wstring is None:
+            wstring = "Waiting Data"
         fig = go.Figure()
         fig.update_layout(
             autosize=False,
             width=width,  #self.epd.width - xoffset,
-            height=height,  #self.epd.height - yoffset,
-            margin=dict(
-                l=2,
-                r=10,
-                b=2,
-                t=10,
-                pad=4
-            ),
+            height=height - 5,  #self.epd.height - yoffset,
+            title=dict(text=wstring, x=0.5, xanchor= 'center', yanchor='middle',
+                       font=dict(color="black", size=40)),
+            margin=dict(l=2, r=10, b=2, t=40, pad=4),
             paper_bgcolor="white",
             plot_bgcolor="white",
             xaxis=dict(

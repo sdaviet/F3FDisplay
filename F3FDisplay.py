@@ -58,6 +58,7 @@ class f3fdisplay_ctrl:
         self.pilotlist = None
         self.roundtimeslist = None
         self.weathertick = 0
+        self.weathertitlesize = 35
         try:
             logging.info("F3FDisplay init")
             if ConfigReader.config.conf['display_type'] == 4.2:
@@ -94,8 +95,8 @@ class f3fdisplay_ctrl:
         self.pilotlist = pilotlist
         self.roundtimeslist = roundtimeslist
         if self.status == status.contest_inprogress and self.mode == mode.contest_pilotlist:
-            self.epaper.displayPilot(self.round, self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                     self.weather.getMoySpeed(), self.bestimelist, self.pilotlist, None)
+            self.epaper.displayPilot(self.round, self.bestimelist, self.pilotlist,
+                                     self.weather.createString(),None)
         elif self.mode == mode.contest_roundtime:
             print("page contest current round time")
             '''self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeedMoy(),
@@ -106,8 +107,7 @@ class f3fdisplay_ctrl:
     def contestNotRunning(self):
         self.status = status.contest_notstarted
         if self.mode is not mode.contest_weather:
-            self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                                 self.weather.getMoySpeed())
+            self.epaper.displayContestNotRunning(self.weather.createString())
             self.mode = mode.contest_None
 
     def displayWaitingMsg(self):
@@ -122,35 +122,31 @@ class f3fdisplay_ctrl:
             if self.mode == mode.contest_None:
                 print("page weather")
                 self.mode = mode.contest_weather
-                self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                               self.weather.getMoySpeed(),
-                               self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
+                self.epaper.displayWeather(self.weather.createString(),
+                        self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-self.weathertitlesize))
             else:
                 print("page contest not running")
 
                 self.mode = mode.contest_None
-                self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                                     self.weather.getMoySpeed())
+                self.epaper.displayContestNotRunning(self.weather.createString())
         if self.status == status.contest_inprogress:
             self.incMode()
             if self.mode == mode.contest_pilotlist:
                 print("page remaining pilot")
 
-                self.epaper.displayPilot(self.round, self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                         self.weather.getMoySpeed(), self.bestimelist, self.pilotlist, None)
+                self.epaper.displayPilot(self.round, self.bestimelist, self.pilotlist,
+                                         self.weather.createString(),None)
             elif self.mode == mode.contest_weather:
                 print("page weather")
-                self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                               self.weather.getMoySpeed(),
-                               self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
+                self.epaper.displayWeather(self.weather.createString(),
+                        self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-self.weathertitlesize))
             elif self.mode == mode.contest_ranking:
                 print("page contest ranking")
                 self.epaper.displayRanking()
             elif self.mode == mode.contest_roundtime:
                 print("page contest current round time")
-                '''self.epaper.displayRemaining_RoundTime(self.round, self.weather.getLastSpeed(),
-                                                       self.weather.getLastDir(),
-                                                       self.bestimelist, self.pilotlist, self.roundtimeslist)
+                '''self.epaper.displayRemaining_RoundTime(self.round, self.bestimelist, self.pilotlist,
+                                                self.roundtimeslist, self.weather.createString())
                 '''
     def slot_down_page(self):
         print("slot_down_page")
@@ -168,17 +164,14 @@ class f3fdisplay_ctrl:
         if self.weathertick > 1:
             if self.mode is not mode.contest_weather:
                 if self.status == status.contest_notstarted:
-                    self.epaper.displayContestNotRunning(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                                         self.weather.getMoySpeed())
+                    self.epaper.displayContestNotRunning(self.weather.createString())
                 if self.status == status.contest_inprogress:
                     #elif self.mode == mode.contest_pilotlist:
-                    self.epaper.displayPilot(self.round, self.weather.getLastSpeed(), self.weather.getLastDir(),
-                                             self.weather.getMoySpeed(), self.bestimelist, self.pilotlist,
-                                             None)
+                    self.epaper.displayPilot(self.round, self.bestimelist, self.pilotlist,
+                                             self.weather.createString(), None)
             else:
-                self.epaper.displayWeather(self.weather.getLastSpeed(), self.weather.getLastDir(),
-                               self.weather.getMoySpeed(),
-                               self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-73))
+                self.epaper.displayWeather(self.weather.createString,
+                        self.weather.createGraph(self.epaper.epd.width, self.epaper.epd.height-self.weathertitlesize))
 
             self.weather.weathertofile()
             self.weathertick = 0

@@ -69,7 +69,7 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayContestNotRunning(self, speed=None, dir=None, moyspeed=0):
+    def displayContestNotRunning(self, weatherstring=None):
         try:
             self.clearImage()
             yoffset = 0
@@ -78,24 +78,15 @@ class Epaper:
                                   fontData=self.font35)
             yoffset = self.displayAddString("CONTEST NOT STARTED", y=yoffset, justif=EpaperJustif.centerdispay,
                                   fontData=self.font35)
-            string = self.createWeatherString(speed, dir, moyspeed)
-            if string is not None:
-                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
+            if weatherstring is not None:
+                yoffset = self.displayAddString(weatherstring, y=yoffset, justif=EpaperJustif.centerdispay,
                                                 fontData=self.font35)
 
             self.epd.display(self.epd.getbuffer(self.image))
         except IOError as e:
             logging.info(e)
 
-    def createWeatherString(self, speed=None, dir=None, moyspeed=0):
-        string=None
-        if speed is not None:
-            string = 'A:{:.0f}'.format(speed) + ',M:{:.0f}'.format(moyspeed) + 'm/s'
-            if dir is not None:
-                string += ',{:.0f}'.format(dir) + '°'
-        return string
-
-    def displayPilot(self, round, speed, dir, moyspeed, besttimelist, pilotlist, weathergraphbuff=None):
+    def displayPilot(self, round, besttimelist, pilotlist, wstring=None, weathergraphbuff=None):
         try:
 
             column = 0
@@ -103,7 +94,7 @@ class Epaper:
             xoffset = 5
             self.clearImage()
             string = 'R:' + round
-            wstring = self.createWeatherString(speed, dir, moyspeed)
+
             if wstring is not None:
                 string+=' - ' + wstring
             yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
@@ -161,14 +152,14 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayRoundTime(self, round, speed, dir, moyspeed, bestimelist, roundtimeslist):
+    def displayRoundTime(self, round, bestimelist, roundtimeslist, wstring=None):
         try:
             column = 0
             yoffset = 0
             xoffset = 5
             self.clearImage()
             string = 'R:' + round
-            wstring = self.createWeatherString(speed, dir, moyspeed)
+
             if wstring is not None:
                 string += ' - ' + wstring
             yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay, fontData=self.font35)
@@ -210,20 +201,13 @@ class Epaper:
         except IOError as e:
             logging.info(e)
 
-    def displayWeather(self, speed, dir, moyspeed, imgPlot):
+    def displayWeather(self, wstring=None, imgPlot=None):
         try:
             yoffset = 0
             self.clearImage()
             yoffset = self.displayAddString("WEATHER STATION", y=yoffset, justif=EpaperJustif.centerdispay,
                                             fontData=self.font35)
 
-            string = self.createWeatherString(speed, dir, moyspeed)
-            if string is not None:
-                yoffset = self.displayAddString(string, y=yoffset, justif=EpaperJustif.centerdispay,
-                                                fontData=self.font35)
-            else:
-                yoffset = self.displayAddString("Waiting data", y=yoffset, justif=EpaperJustif.centerdispay,
-                                                fontData=self.font35)
             if imgPlot is not None:
                 self.image.paste(imgPlot, (0, yoffset))
 

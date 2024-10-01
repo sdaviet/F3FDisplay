@@ -18,6 +18,7 @@
 # -*- coding:utf-8 -*-
 import sys
 import os
+from pathlib import  Path
 import io
 import plotly.graph_objects as go
 import plotly.io as plotio
@@ -27,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageQt
 from filewriter import filewriter
 from UDPReceive import udpreceive
 
-picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
+picdir = os.path.join(Path.home(), 'Pictures')
 datadir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
 class weather(QTimer):
@@ -38,7 +39,7 @@ class weather(QTimer):
         super().__init__()
         self.timerinterval = ConfigReader.config.conf['weather_timer_s']
         self.maxweatherdata = ConfigReader.config.conf['max_weather_data']
-
+        self.weatheraspngfilename = os.path.join(picdir, ConfigReader.config.conf['weatheraspng'])
         self.udp = udpreceive(4445)
         self.udp.winddir_signal.connect(self.slot_winddir)
         self.udp.windspeed_signal.connect(self.slot_windspeed)
@@ -204,15 +205,14 @@ class weather(QTimer):
             name='Fair',
         ))
 
-        if asFile==False:
+        if not asFile:
             buf = io.BytesIO()
             plotio.write_image(fig, buf, 'png', scale=1)
             buf.seek(0)
             return Image.open(buf)
         else:
-            filename = os.path.join(datadir, "weatherGraph.png")
-            plotio.write_image(fig, filename, 'png', scale=1)
-            return filename
+            plotio.write_image(fig, self.weatheraspngfilename, 'png', scale=1)
+            return self.weatheraspngfilename
 
     def weathertofile(self):
         x, min, moy, max, dir = self.getData()
